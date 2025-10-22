@@ -1,4 +1,8 @@
 # app.py - Frontend on Render.com
+import eventlet
+eventlet.monkey_patch()
+
+# app.py - Frontend on Render.com
 import os
 import time
 from flask import Flask, render_template, request, send_file
