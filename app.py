@@ -53,6 +53,33 @@ def handle_connect():
 def handle_disconnect():
     print(f"❌ Client disconnected: {request.sid}")
 
+@socketio.on('wake_gpu')
+def handle_wake_gpu():
+    """Sends a quick health check to RunPod to potentially start a worker."""
+    sid = request.sid
+    print(f"⚡ Received wake_gpu request from {sid[:8]}...")
+
+    if not RUNPOD_API_KEY or not RUNPOD_ENDPOINT_ID:
+        print("❌ Cannot wake GPU: Missing RunPod environment variables.")
+        # Don't necessarily need to inform the user, just log it.
+        return
+
+    headers = { "Authorization": f"Bearer {RUNPOD_API_KEY}", "Content-Type": "application/json" }
+    payload = { "input": { "endpoint": "health" } } # Use the fast health check
+
+    try:
+        # Send the request but don't wait long for a response
+        # The goal is just to trigger the endpoint
+        response = requests.post(RUNPOD_RUN_URL, headers=headers, json=payload, timeout=5) # 5 second timeout
+        if response.status_code == 200:
+            job_id = response.json().get('id', 'N/A')
+            print(f"✅ Wake-up job submitted. Job ID: {job_id}")
+        else:
+             print(f"⚠️ Wake-up call failed or timed out: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Error sending wake-up call: {e}")
+    # No need to poll or return anything to the user here
+
 @socketio.on('preprocess_image')
 def handle_preprocess(data):
     """

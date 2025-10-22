@@ -882,6 +882,12 @@
         const progressBar = document.getElementById('progressBar');
         const infoBox = document.getElementById('infoBox');
         const sequenceDisplay = document.getElementById('sequenceDisplay');
+
+        // --- Trigger GPU Wake-up ---
+        imageUpload.addEventListener('click', () => {
+            console.log('⚡ User clicked upload, sending wake_gpu signal...');
+            socket.emit('wake_gpu');
+        });
         
         // Tab elements
         const tabButtons = document.querySelectorAll('.tab-button');
