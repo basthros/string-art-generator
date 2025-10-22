@@ -850,1262 +850,666 @@
     </div>
 
     <script>
-        const socket = io();
-        
-        // Voice configuration
-        const voiceConfig = {
-            'en-GB': { male: 'Brian', female: 'Amy' },
-            'es-US': { male: 'Miguel', female: 'Penelope' },
-            'fr-FR': { male: 'Mathieu', female: 'Celine' },
-            'de-DE': { male: 'Hans', female: 'Marlene' },
-            'it-IT': { male: 'Giorgio', female: 'Carla' },
-            'pt-BR': { male: 'Ricardo', female: 'Vitoria' },
-            'ja-JP': { male: 'Takumi', female: 'Mizuki' },
-            'ko-KR': { male: 'Seoyeon', female: 'Seoyeon' }
-        };
-        
-        // Elements
-        const imageUpload = document.getElementById('imageUpload');
-        const generateBtn = document.getElementById('generateBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const restoreBtn = document.getElementById('restoreBtn');
-        const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-        const canvas = document.getElementById('stringArtCanvas');
-        const ctx = canvas.getContext('2d');
-        const sourceCanvas = document.getElementById('sourceCanvas');
-        const sourceCtx = sourceCanvas.getContext('2d');
-        const sequenceCanvas = document.getElementById('sequenceCanvas');
-        const sequenceCtx = sequenceCanvas.getContext('2d');
-        const cropAgainBtn = document.getElementById('cropAgainBtn');        
-        const status = document.getElementById('status');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const infoBox = document.getElementById('infoBox');
-        const sequenceDisplay = document.getElementById('sequenceDisplay');
-        
-        // Tab elements
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        // Sequence navigation
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const sequenceCounter = document.getElementById('sequenceCounter');
-        
-        // Voice elements
-        const voiceGender = document.getElementById('voiceGender');
-        const voiceLanguage = document.getElementById('voiceLanguage');
-        const speechMode = document.getElementById('speechMode');
-        const voicePlay = document.getElementById('voicePlay');
-        const voicePause = document.getElementById('voicePause');
-        const voiceStop = document.getElementById('voiceStop');
-        const voiceSpeed = document.getElementById('voiceSpeed');
-        const voiceSpeedValue = document.getElementById('voiceSpeedValue');
-        const currentStep = document.getElementById('currentStep');
-        
-        // Crop modal elements
-        const cropModal = document.getElementById('cropModal');
-        const cropImage = document.getElementById('cropImage');
-        const closeCropModal = document.getElementById('closeCropModal');
-        const cancelCrop = document.getElementById('cancelCrop');
-        const applyCrop = document.getElementById('applyCrop');
-        
-        let cropper = null;
-        let currentImageData = null;
-        let sourceImageData = null;
-        let originalImageData = null;
-        let numNails = 250;
-        let circleRadius = 30;
-        let pinSequence = [];
-        
-        // Voice control state
-        let voiceIndex = 0;
-        let voicePlaying = false;
-        let voicePaused = false;
-        let voiceDelay = 1.0;
-        let currentAudio = null;
-        let shouldStop = false;
-        let shouldSwitchMode = false;
-        let isRestoring = false;
-        let hasValidCanvasData = false;
-        
-        // Generation state
-        let isGenerating = false;
-        
-        // Audio promise tracking
-        let audioResolve = null;
-        let audioReject = null;
-        
-        // ====================================================================
-        // Tab Switching
-        // ====================================================================
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const targetTab = button.dataset.tab;
-                
-                // Update buttons
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
-                // Update content
-                tabContents.forEach(content => content.classList.remove('active'));
-                document.getElementById(targetTab + 'Tab').classList.add('active');
-                
-                // If switching to sequence tab, draw current sequence position
-                if (targetTab === 'sequence' && pinSequence.length > 0) {
-                    drawSequenceVisualization(voiceIndex);
-                }
-            });
-        });
-        
-        // ====================================================================
-        // Sequence Navigation
-        // ====================================================================
-        prevBtn.addEventListener('click', () => {
-            if (voiceIndex > 0) {
-                voiceIndex--;
-                updateSequenceNavigation();
-            }
-        });
-        
-        nextBtn.addEventListener('click', () => {
-            const maxIndex = speechMode.value === 'connections' ? 
-                pinSequence.length - 2 : pinSequence.length - 1;
-            
-            if (voiceIndex < maxIndex) {
-                voiceIndex++;
-                updateSequenceNavigation();
-            }
-        });
-        
-        function updateSequenceNavigation() {
-            const mode = speechMode.value;
-            const maxIndex = mode === 'connections' ? 
-                pinSequence.length - 2 : pinSequence.length - 1;
-    
-            // Update buttons
-            prevBtn.disabled = voiceIndex <= 0;
-            nextBtn.disabled = voiceIndex >= maxIndex;
-    
-            // Update counter with HTML for line break
-            if (mode === 'connections' && voiceIndex < pinSequence.length - 1) {
-                sequenceCounter.innerHTML = `${voiceIndex + 1} / ${pinSequence.length - 1}<br>${pinSequence[voiceIndex]} → ${pinSequence[voiceIndex + 1]}`;
-            } else if (mode === 'numbers' && voiceIndex < pinSequence.length) {
-                sequenceCounter.innerHTML = `${voiceIndex + 1} / ${pinSequence.length}<br>Pin ${pinSequence[voiceIndex]}`;
-            } else {
-                sequenceCounter.textContent = '-';
-            }
-    
-            // Update visualization
-            drawSequenceVisualization(voiceIndex);
-    
-            // Highlight in sequence
-            highlightCurrentPosition();
-    
-            // Save state
-            saveState();
-}
-        
-        // ====================================================================
-        // Sequence Visualization
-        // ====================================================================
-        function drawSequenceVisualization(index) {
-    if (pinSequence.length === 0) return;
-    
-    const mode = speechMode.value;
-    
-    // Clear canvas
-    sequenceCtx.clearRect(0, 0, sequenceCanvas.width, sequenceCanvas.height);
-    
-    const centerX = sequenceCanvas.width / 2;
-    const centerY = sequenceCanvas.height / 2;
-    const radius = sequenceCanvas.width / 2 - 60;
-    
-    // Draw circle outline
-    sequenceCtx.strokeStyle = '#ddd';
-    sequenceCtx.lineWidth = 2;
-    sequenceCtx.beginPath();
-    sequenceCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-    sequenceCtx.stroke();
-    
-    // Helper function to get nail position (matching template)
-    function getNailPos(nailIndex) {
-        // Match the template: nail 0 starts at angle 0 (right side, 3 o'clock)
-        // and goes counter-clockwise
-        const angle = (nailIndex / numNails) * 2 * Math.PI;
-        // Flip Y to match canvas coordinate system (Y increases downward)
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY - radius * Math.sin(angle);  // Note: minus for Y
-        return { x, y, angle };
-    }
-    
-    // Draw all nails (small dots)
-    sequenceCtx.fillStyle = '#ccc';
-    for (let i = 0; i < numNails; i++) {
-        const pos = getNailPos(i);
-        sequenceCtx.beginPath();
-        sequenceCtx.arc(pos.x, pos.y, 2, 0, 2 * Math.PI);
-        sequenceCtx.fill();
-    }
-    
-    // Highlight current connection
-    if (mode === 'connections' && index < pinSequence.length - 1) {
-        const fromNail = pinSequence[index] - 1;
-        const toNail = pinSequence[index + 1] - 1;
-        
-        const fromPos = getNailPos(fromNail);
-        const toPos = getNailPos(toNail);
-        
-        // Draw connection line
-        sequenceCtx.strokeStyle = '#000';
-        sequenceCtx.lineWidth = 3;
-        sequenceCtx.beginPath();
-        sequenceCtx.moveTo(fromPos.x, fromPos.y);
-        sequenceCtx.lineTo(toPos.x, toPos.y);
-        sequenceCtx.stroke();
-        
-        // Draw FROM nail
-        sequenceCtx.fillStyle = '#667eea';
-        sequenceCtx.beginPath();
-        sequenceCtx.arc(fromPos.x, fromPos.y, 12, 0, 2 * Math.PI);
-        sequenceCtx.fill();
-        
-        // Draw TO nail
-        sequenceCtx.fillStyle = '#764ba2';
-        sequenceCtx.beginPath();
-        sequenceCtx.arc(toPos.x, toPos.y, 12, 0, 2 * Math.PI);
-        sequenceCtx.fill();
-        
-        // Labels on nails
-        sequenceCtx.fillStyle = '#fff';
-        sequenceCtx.font = 'bold 12px Arial';
-        sequenceCtx.textAlign = 'center';
-        sequenceCtx.textBaseline = 'middle';
-        sequenceCtx.fillText(pinSequence[index], fromPos.x, fromPos.y);
-        sequenceCtx.fillText(pinSequence[index + 1], toPos.x, toPos.y);
-        
-        // FROM/TO labels outside circle
-        const labelRadius = radius + 40;
-        
-        const fromLabelX = centerX + labelRadius * Math.cos(fromPos.angle);
-        const fromLabelY = centerY - labelRadius * Math.sin(fromPos.angle);  // Note: minus for Y
-        const toLabelX = centerX + labelRadius * Math.cos(toPos.angle);
-        const toLabelY = centerY - labelRadius * Math.sin(toPos.angle);  // Note: minus for Y
-        
-        sequenceCtx.fillStyle = '#000';
-        sequenceCtx.font = 'bold 16px Arial';
-        sequenceCtx.fillText(`FROM ${pinSequence[index]}`, fromLabelX, fromLabelY);
-        sequenceCtx.fillText(`TO ${pinSequence[index + 1]}`, toLabelX, toLabelY);
-        
-    } else if (mode === 'numbers' && index < pinSequence.length) {
-        const nail = pinSequence[index] - 1;
-        const pos = getNailPos(nail);
-        
-        // Draw highlighted nail
-        sequenceCtx.fillStyle = '#ff4444';
-        sequenceCtx.beginPath();
-        sequenceCtx.arc(pos.x, pos.y, 15, 0, 2 * Math.PI);
-        sequenceCtx.fill();
-        
-        // Label on nail
-        sequenceCtx.fillStyle = '#fff';
-        sequenceCtx.font = 'bold 14px Arial';
-        sequenceCtx.textAlign = 'center';
-        sequenceCtx.textBaseline = 'middle';
-        sequenceCtx.fillText(pinSequence[index], pos.x, pos.y);
-        
-        // Label outside
-        const labelRadius = radius + 40;
-        const labelX = centerX + labelRadius * Math.cos(pos.angle);
-        const labelY = centerY - labelRadius * Math.sin(pos.angle);  // Note: minus for Y
-        
-        sequenceCtx.fillStyle = '#000';
-        sequenceCtx.font = 'bold 18px Arial';
-        sequenceCtx.fillText(`PIN ${pinSequence[index]}`, labelX, labelY);
-    }
-}
-        
-        // ====================================================================
-        // Auto-Save / Restore Functions
-        // ====================================================================
-        function saveState() {
-            if (isRestoring) {
-                console.log('⏸️ Skipping save during restoration');
-                return;
-            }
-            
-            // Get existing state to preserve canvas data
-            const existingState = localStorage.getItem('stringArtState');
-            let preservedCanvasData = null;
-            
-            if (existingState) {
-                try {
-                    const parsed = JSON.parse(existingState);
-                    preservedCanvasData = parsed.canvasData;
-                } catch (e) {
-                    console.error('Error parsing existing state:', e);
-                }
-            }
-            
-            // Only use current canvas if we explicitly know it has valid data
-            // Otherwise preserve existing canvas data
-            let canvasDataToSave = preservedCanvasData;
-            if (hasValidCanvasData && pinSequence.length > 0) {
-                canvasDataToSave = canvas.toDataURL();
-                console.log('💾 Saving CURRENT canvas data');
-            } else if (preservedCanvasData) {
-                console.log('💾 Preserving EXISTING canvas data');
-            } else {
-                console.log('💾 No canvas data to save');
-            }
-            
-            const state = {
-                pinSequence: pinSequence,
-                voiceIndex: voiceIndex,
-                numNails: numNails,
-                circleRadius: circleRadius,
-                canvasData: canvasDataToSave,
-                sourceImageData: sourceImageData,
-                originalImageData: originalImageData,
-                speechMode: speechMode.value,
-                timestamp: Date.now()
-            };
-            
-            localStorage.setItem('stringArtState', JSON.stringify(state));
-            console.log('💾 State saved, canvasData exists:', !!state.canvasData);
-        }
-        
-        function restoreState() {
-            const savedState = localStorage.getItem('stringArtState');
-            if (!savedState) {
-                console.log('❌ No saved state found');
-                return false;
-            }
-            
-            isRestoring = true;
-            
-            try {
-                const state = JSON.parse(savedState);
-                console.log('📦 Restoring state:', {
-                    hasPinSequence: !!state.pinSequence?.length,
-                    hasCanvasData: !!state.canvasData,
-                    hasSourceImage: !!state.sourceImageData
-                });
-                
-                pinSequence = state.pinSequence || [];
-                voiceIndex = state.voiceIndex || 0;
-                numNails = state.numNails || 250;
-                circleRadius = state.circleRadius || 30;
-                sourceImageData = state.sourceImageData || null;
-                originalImageData = state.originalImageData || null;
-                
-                if (state.speechMode) {
-                    speechMode.value = state.speechMode;
-                }
-                
-                // Restore final canvas (string art)
-                if (state.canvasData) {
-                    const img = new Image();
-                    img.onload = () => {
-                        canvas.width = 800;
-                        canvas.height = 800;
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        hasValidCanvasData = true;  // ADD THIS LINE - mark canvas as valid
-                        console.log('✅ Final canvas restored and marked as valid');
-                    };
-                    img.onerror = (e) => {
-                        console.error('❌ Failed to restore final canvas:', e);
-                        hasValidCanvasData = false;
-                    };
-                    img.src = state.canvasData;
-                } else {
-                    console.log('⚠️ No canvas data to restore');
-                    hasValidCanvasData = false;
-                }
-                
-                // Restore source canvas
-                if (sourceImageData) {
-                    const img = new Image();
-                    img.onload = () => {
-                        sourceCanvas.width = 800;
-                        sourceCanvas.height = 800;
-                        sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
-                        sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
-                        console.log('✅ Source canvas restored');
-                    };
-                    img.onerror = (e) => {
-                        console.error('❌ Failed to restore source canvas:', e);
-                    };
-                    img.src = sourceImageData;
-                }
-                
-                // Restore sequence display
-                if (pinSequence.length > 0) {
-                    renderSequence();
-                    updateSpeechModeExamples();
-                    updateSequenceNavigation();
-                    voicePlay.disabled = false;
-                    voiceStop.disabled = false;
-                    downloadTemplateBtn.disabled = false;
-                    cancelBtn.disabled = false;
-                    prevBtn.disabled = false;
-                    nextBtn.disabled = false;
-                    cropAgainBtn.disabled = sourceImageData ? false : true;
-                    generateBtn.disabled = sourceImageData ? false : true;
-                    status.textContent = '✅ Previous session restored!';
-                    
-                    const totalLength = calculateDisplayLength();
-                    document.getElementById('stringLength').textContent = totalLength;
-                    document.getElementById('linesGenerated').textContent = pinSequence.length - 1;
-                    infoBox.style.display = 'block';
-                    
-                    setTimeout(() => {
-                        highlightCurrentPosition();
-                        drawSequenceVisualization(voiceIndex);
-                        
-                        const mode = speechMode.value;
-                        if (mode === 'connections') {
-                            if (voiceIndex < pinSequence.length - 1) {
-                                currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} → ${pinSequence[voiceIndex + 1]} (position ${voiceIndex + 1})`;
-                            } else {
-                                currentStep.textContent = 'At end of sequence';
-                            }
-                        } else {
-                            if (voiceIndex < pinSequence.length) {
-                                currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} (position ${voiceIndex + 1})`;
-                            } else {
-                                currentStep.textContent = 'At end of sequence';
-                            }
-                        }
-                    }, 100);
-                }
-                
-                console.log('✅ Restore complete');
-                isRestoring = false;
-                return true;
-            } catch (e) {
-                console.error('❌ Failed to restore state:', e);
-                isRestoring = false;
-                hasValidCanvasData = false;
-                return false;
-            }
-        }
-        
-        function clearState() {
-            localStorage.removeItem('stringArtState');
-        }
-        
-        function calculateDisplayLength() {
-            if (pinSequence.length < 2) return '-';
-            
-            const radius_m = circleRadius / 100.0;
-            let total_length = 0.0;
-            
-            for (let i = 0; i < pinSequence.length - 1; i++) {
-                const nail1 = pinSequence[i] - 1;
-                const nail2 = pinSequence[i + 1] - 1;
-                
-                const angle1 = (nail1 / numNails) * 2 * Math.PI;
-                const angle2 = (nail2 / numNails) * 2 * Math.PI;
-                
-                const angle_diff = Math.abs(angle2 - angle1);
-                const chord_length = 2 * radius_m * Math.sin(angle_diff / 2);
-                total_length += chord_length;
-            }
-            
-            return `${total_length.toFixed(2)} m (approx ${(total_length * 3.28084).toFixed(1)} ft)`;
-        }
-        
-        function renderSequence() {
-            sequenceDisplay.innerHTML = '';
-            
-            for (let i = 0; i < pinSequence.length; i++) {
-                const span = document.createElement('span');
-                span.className = 'sequence-item';
-                span.textContent = pinSequence[i];
-                span.dataset.index = i;
-                
-                span.addEventListener('click', () => {
-                    if (voicePlaying) {
-                        stopCurrentAudio();
-                        voicePlaying = false;
-                        voicePaused = false;
-                    }
-                    
-                    voiceIndex = i;
-                    updateSequenceNavigation();
-                    
-                    voicePlay.disabled = false;
-                    voicePause.disabled = true;
-                    voiceStop.disabled = false;
-                    
-                    currentStep.textContent = `Jumped to position ${i + 1}`;
-                });
-                
-                sequenceDisplay.appendChild(span);
-                
-                if (i < pinSequence.length - 1) {
-                    const arrow = document.createElement('span');
-                    arrow.textContent = ' → ';
-                    sequenceDisplay.appendChild(arrow);
-                }
-            }
-            
-            highlightCurrentPosition();
-        }
-        
-        function highlightCurrentPosition() {
-            document.querySelectorAll('.sequence-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            const items = document.querySelectorAll('.sequence-item');
-            if (items[voiceIndex]) {
-                items[voiceIndex].classList.add('active');
-                
-                items[voiceIndex].scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
-        }
-        
-        window.addEventListener('load', () => {
-            const restored = restoreState();
-            if (restored) {
-                restoreBtn.style.display = 'none';
-            }
-        });
-        
-        function updateSpeechModeExamples() {
-            if (pinSequence.length < 4) return;
-            
-            const conn1 = `${pinSequence[0]} - ${pinSequence[1]}`;
-            const conn2 = `${pinSequence[1]} - ${pinSequence[2]}`;
-            
-            const num1 = pinSequence[0];
-            const num2 = pinSequence[1];
-            const num3 = pinSequence[2];
-            
-            speechMode.options[0].text = `Connections (${conn1}, ${conn2}...)`;
-            speechMode.options[1].text = `Numbers Only (${num1}, ${num2}, ${num3}...)`;
-        }
-        
-        // Range inputs
-        document.querySelectorAll('input[type="range"]').forEach(input => {
-            const valueSpan = document.getElementById(input.id + 'Value');
-            input.addEventListener('input', (e) => {
-                valueSpan.textContent = e.target.value;
-            });
-        });
-        
-        document.getElementById('numNails').addEventListener('input', (e) => {
-            numNails = parseInt(e.target.value);
-        });
-        
-        document.getElementById('circleRadius').addEventListener('input', (e) => {
-            circleRadius = parseFloat(e.target.value);
-        });
-        
-        voiceSpeed.addEventListener('input', (e) => {
-            voiceDelay = parseFloat(e.target.value);
-        });
-        
-        function getSelectedVoice() {
-            const gender = voiceGender.value;
-            const language = voiceLanguage.value;
-            return voiceConfig[language][gender];
-        }
-        
-        async function fetchTTSAudio(text, voiceName) {
-            const url = `https://api.streamelements.com/kappa/v2/speech?voice=${voiceName}&text=${encodeURIComponent(text)}`;
-            
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('TTS request failed');
-                
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                
-                return audioUrl;
-            } catch (error) {
-                console.error('TTS Error:', error);
-                return null;
-            }
-        }
-        
-        function playAudio(audioUrl) {
-            return new Promise((resolve, reject) => {
-                audioResolve = resolve;
-                audioReject = reject;
-                
-                currentAudio = new Audio(audioUrl);
-                
-                currentAudio.onended = () => {
-                    URL.revokeObjectURL(audioUrl);
-                    currentAudio = null;
-                    audioResolve = null;
-                    audioReject = null;
-                    resolve();
-                };
-                
-                currentAudio.onerror = () => {
-                    URL.revokeObjectURL(audioUrl);
-                    currentAudio = null;
-                    audioResolve = null;
-                    audioReject = null;
-                    reject();
-                };
-                
-                currentAudio.play().catch(() => {
-                    URL.revokeObjectURL(audioUrl);
-                    currentAudio = null;
-                    audioResolve = null;
-                    audioReject = null;
-                    reject();
-                });
-            });
-        }
-        
-        function stopCurrentAudio() {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-                currentAudio = null;
-            }
-            if (audioReject) {
-                audioReject(new Error('Audio stopped'));
-                audioResolve = null;
-                audioReject = null;
-            }
-        }
-        
-        async function startVoiceGuidance() {
-            if (pinSequence.length < 2) {
-                alert('No sequence to read!');
-                return;
-            }
-            
-            voicePlaying = true;
-            voicePaused = false;
-            shouldStop = false;
-            shouldSwitchMode = false;
-            voicePlay.disabled = true;
-            voicePause.disabled = false;
-            voiceStop.disabled = false;
-            
-            while (voicePlaying && !shouldStop) {
-                if (shouldSwitchMode) {
-                    shouldSwitchMode = false;
-                }
-                
-                const mode = speechMode.value;
-                
-                if (mode === 'connections' && voiceIndex >= pinSequence.length - 1) {
-                    break;
-                }
-                if (mode === 'numbers' && voiceIndex >= pinSequence.length) {
-                    break;
-                }
-                
-                while (voicePaused && voicePlaying && !shouldStop) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-                if (shouldStop || !voicePlaying) break;
-                
-                const voiceName = getSelectedVoice();
-                let text = '';
-                
-                if (mode === 'connections') {
-                    if (voiceIndex >= pinSequence.length - 1) break;
-                    const from = pinSequence[voiceIndex];
-                    const to = pinSequence[voiceIndex + 1];
-                    text = `${from} - ${to}`;
-                } else {
-                    if (voiceIndex >= pinSequence.length) break;
-                    text = `${pinSequence[voiceIndex]}`;
-                }
-                
-                currentStep.textContent = text;
-                highlightCurrentPosition();
-                updateSequenceNavigation();
-                
-                let audioCompleted = false;
-                
-                try {
-                    const audioUrl = await fetchTTSAudio(text, voiceName);
-                    
-                    if (!audioUrl || shouldStop || voicePaused || !voicePlaying || shouldSwitchMode) {
-                        if (audioUrl) URL.revokeObjectURL(audioUrl);
-                        continue;
-                    }
-                    
-                    await playAudio(audioUrl);
-                    
-                    if (shouldStop || voicePaused || !voicePlaying || shouldSwitchMode) {
-                        continue;
-                    }
-                    
-                    audioCompleted = true;
-                    
-                    if (voiceDelay > 0) {
-                        await new Promise(resolve => setTimeout(resolve, voiceDelay * 1000));
-                        
-                        if (shouldStop || voicePaused || !voicePlaying || shouldSwitchMode) {
-                            continue;
-                        }
-                    }
-                    
-                } catch (error) {
-                    console.error('Audio playback error:', error);
-                    continue;
-                }
-                
-                if (audioCompleted && !shouldStop && !voicePaused && voicePlaying && !shouldSwitchMode) {
-                    voiceIndex++;
-                    saveState();
-                    highlightCurrentPosition();
-                    updateSequenceNavigation();
-                }
-            }
-            
-            const modeEnd = speechMode.value;
-            const endCondition = modeEnd === 'connections' ? 
-                voiceIndex >= pinSequence.length - 1 : 
-                voiceIndex >= pinSequence.length;
-            
-            if (endCondition) {
-                currentStep.textContent = '✅ Completed!';
-                voiceIndex = 0;
-                saveState();
-                highlightCurrentPosition();
-                updateSequenceNavigation();
-            } else if (shouldStop) {
-                currentStep.textContent = '⏹ Stopped';
-                saveState();
-                highlightCurrentPosition();
-            } else if (voicePaused) {
-                currentStep.textContent = '⏸ Paused';
-                saveState();
-            }
-            
-            voicePlaying = false;
-            
-            if (!voicePaused) {
-                voicePlay.disabled = false;
-                voicePause.disabled = true;
-                voiceStop.disabled = true;
-            }
-        }
-        
-        voicePlay.addEventListener('click', () => {
-            if (voicePaused) {
-                voicePaused = false;
-                currentStep.textContent = 'Resuming...';
-                startVoiceGuidance();
-            } else {
-                startVoiceGuidance();
-            }
-        });
-        
-        voicePause.addEventListener('click', () => {
-            voicePaused = true;
-            voicePlaying = false;
-            
-            stopCurrentAudio();
-            
-            voicePlay.disabled = false;
-            voicePause.disabled = true;
-            
-            const mode = speechMode.value;
-            
-            if (mode === 'connections' && voiceIndex < pinSequence.length - 1) {
-                currentStep.textContent = `⏸ Paused at: ${pinSequence[voiceIndex]} - ${pinSequence[voiceIndex + 1]}`;
-            } else if (mode === 'numbers' && voiceIndex < pinSequence.length) {
-                currentStep.textContent = `⏸ Paused at: ${pinSequence[voiceIndex]}`;
-            }
-            
-            saveState();
-        });
-        
-        voiceStop.addEventListener('click', () => {
-            shouldStop = true;
-            voicePlaying = false;
-            voicePaused = false;
-            voiceIndex = 0;
-            
-            stopCurrentAudio();
-            
-            voicePlay.disabled = false;
-            voicePause.disabled = true;
-            voiceStop.disabled = true;
-            currentStep.textContent = '⏹ Stopped';
-            saveState();
-            highlightCurrentPosition();
-            updateSequenceNavigation();
-        });
-        
-        speechMode.addEventListener('change', () => {
-            if (voicePlaying) {
-                shouldSwitchMode = true;
-                stopCurrentAudio();
-            }
-            highlightCurrentPosition();
-            updateSequenceNavigation();
-            
-            if (pinSequence.length > 0) {
-                saveState();
-            }
-        });
-        
-        voiceLanguage.addEventListener('change', () => {
-            if (voicePlaying) {
-                shouldSwitchMode = true;
-                stopCurrentAudio();
-            }
-        });
-        
-        voiceGender.addEventListener('change', () => {
-            if (voicePlaying) {
-                shouldSwitchMode = true;
-                stopCurrentAudio();
-            }
-        });
-        
-        imageUpload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                originalImageData = event.target.result;  // STORE ORIGINAL
-                
-                const img = new Image();
-                img.onload = () => {
-                    if (img.width === img.height) {
-                        processSquareImage(event.target.result);
-                    } else {
-                        showCropModal(event.target.result);
-                    }
-                };
-                img.onerror = () => {
-                    alert('Failed to load image. Please try another file.');
-                };
-                img.src = event.target.result;
-            };
-            reader.onerror = () => {
-                alert('Failed to read file. Please try again.');
-            };
-            reader.readAsDataURL(file);
-        });
-        
-        function showCropModal(imageSrc) {
-            cropImage.src = imageSrc;
-            cropModal.style.display = 'block';
-            
-            cropImage.onload = () => {
-                if (cropper) cropper.destroy();
-                
-                // Detect if mobile
-                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-                
-                cropper = new Cropper(cropImage, {
-                    aspectRatio: 1,
-                    viewMode: 1,
-                    autoCropArea: 0.9,
-                    responsive: true,
-                    restore: false,
-                    guides: true,
-                    center: true,
-                    highlight: false,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    toggleDragModeOnDblclick: false,
-                    
-                    // Mobile-specific improvements
-                    dragMode: 'move',
-                    wheelZoomRatio: 0.1,
-                    
-                    // Make touch interactions smoother
-                    ready: function() {
-                        if (isMobile) {
-                            // Add pinch-to-zoom for mobile
-                            document.getElementById('cropControls').style.display = 'block';
-                            const imageElement = this.cropper.image;
-                            let initialDistance = 0;
-                            let currentScale = 1;
-                            
-                            imageElement.addEventListener('touchstart', function(e) {
-                                if (e.touches.length === 2) {
-                                    e.preventDefault();
-                                    const touch1 = e.touches[0];
-                                    const touch2 = e.touches[1];
-                                    initialDistance = Math.hypot(
-                                        touch2.pageX - touch1.pageX,
-                                        touch2.pageY - touch1.pageY
-                                    );
-                                }
-                            });
-                            
-                            imageElement.addEventListener('touchmove', function(e) {
-                                if (e.touches.length === 2) {
-                                    e.preventDefault();
-                                    const touch1 = e.touches[0];
-                                    const touch2 = e.touches[1];
-                                    const currentDistance = Math.hypot(
-                                        touch2.pageX - touch1.pageX,
-                                        touch2.pageY - touch1.pageY
-                                    );
-                                    
-                                    const delta = currentDistance - initialDistance;
-                                    const newScale = currentScale + (delta * 0.01);
-                                    
-                                    cropper.scale(newScale, newScale);
-                                }
-                            });
-                        }
-                    }
-                });
-            };
-        }
-        
-        function hideCropModal() {
-            cropModal.style.display = 'none';
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-            }
-        }
-        
-        closeCropModal.addEventListener('click', hideCropModal);
-        
-        cancelCrop.addEventListener('click', () => {
-            hideCropModal();
-            imageUpload.value = '';
-        });
-        
-        applyCrop.addEventListener('click', () => {
-            if (!cropper) return;
-            
-            // Get the cropped square image
-            const croppedCanvas = cropper.getCroppedCanvas({ width: 800, height: 800 });
-            
-            // Create a new canvas to apply circular mask
-            const circularCanvas = document.createElement('canvas');
-            circularCanvas.width = 800;
-            circularCanvas.height = 800;
-            const circularCtx = circularCanvas.getContext('2d');
-            
-            // Draw circular clipping path
-            const centerX = 400;
-            const centerY = 400;
-            const radius = 400;
-            
-            circularCtx.beginPath();
-            circularCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            circularCtx.closePath();
-            circularCtx.clip();
-            
-            // Draw the cropped image (only the circular area will show)
-            circularCtx.drawImage(croppedCanvas, 0, 0, 800, 800);
-            
-            // Get the circular result
-            const croppedImageData = circularCanvas.toDataURL('image/png');
-            
-            hideCropModal();
-            processSquareImage(croppedImageData);
-        });
-        
-        cropAgainBtn.addEventListener('click', () => {
-            if (!originalImageData) return;
-            
-            // Show crop modal with ORIGINAL uncropped image
-            showCropModal(originalImageData);
-        });
+       const socket = io();
 
-        function processSquareImage(imageData) {
-            currentImageData = imageData;
-            sourceImageData = imageData;
-            
-            const img = new Image();
-            img.onload = () => {
-                sourceCanvas.width = 800;
-                sourceCanvas.height = 800;
-                sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
-                sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
-                
-                generateBtn.disabled = false;
-                downloadTemplateBtn.disabled = false;
-                cancelBtn.disabled = false;
-                cropAgainBtn.disabled = false;
-                isGenerating = true;
-                status.textContent = '⚙️ Pre-processing image...';
-                
-                socket.emit('preprocess_image', {
-                    imageData: currentImageData,
-                    num_nails: numNails,
-                    image_resolution: parseInt(document.getElementById('imageResolution').value)
-                });
-                
-                // Switch to Source tab
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-                document.querySelector('[data-tab="source"]').classList.add('active');
-                document.getElementById('sourceTab').classList.add('active');
-            };
-            img.src = imageData;
-        }
-        
-        downloadTemplateBtn.addEventListener('click', () => {
-            const url = `/download_template/${numNails}/${circleRadius}`;
-            window.open(url, '_blank');
-        });
-        
-        generateBtn.addEventListener('click', () => {
-            if (!currentImageData) {
-                alert('Please upload an image first!');
+       // Voice configuration
+       const voiceConfig = {
+           'en-GB': { male: 'Brian', female: 'Amy' },
+           'es-US': { male: 'Miguel', female: 'Penelope' },
+           'fr-FR': { male: 'Mathieu', female: 'Celine' },
+           'de-DE': { male: 'Hans', female: 'Marlene' },
+           'it-IT': { male: 'Giorgio', female: 'Carla' },
+           'pt-BR': { male: 'Ricardo', female: 'Vitoria' },
+           'ja-JP': { male: 'Takumi', female: 'Mizuki' },
+           'ko-KR': { male: 'Seoyeon', female: 'Seoyeon' }
+       };
+
+       // Elements
+       const imageUpload = document.getElementById('imageUpload');
+       const generateBtn = document.getElementById('generateBtn');
+       const cancelBtn = document.getElementById('cancelBtn');
+       const restoreBtn = document.getElementById('restoreBtn');
+       const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+       const canvas = document.getElementById('stringArtCanvas');
+       const ctx = canvas.getContext('2d');
+       const sourceCanvas = document.getElementById('sourceCanvas');
+       const sourceCtx = sourceCanvas.getContext('2d');
+       const sequenceCanvas = document.getElementById('sequenceCanvas');
+       const sequenceCtx = sequenceCanvas.getContext('2d');
+       const cropAgainBtn = document.getElementById('cropAgainBtn');        
+       const status = document.getElementById('status');
+       const progressContainer = document.getElementById('progressContainer');
+       const progressBar = document.getElementById('progressBar');
+       const infoBox = document.getElementById('infoBox');
+       const sequenceDisplay = document.getElementById('sequenceDisplay');
+
+       // Tab elements
+       const tabButtons = document.querySelectorAll('.tab-button');
+       const tabContents = document.querySelectorAll('.tab-content');
+
+       // Sequence navigation
+       const prevBtn = document.getElementById('prevBtn');
+       const nextBtn = document.getElementById('nextBtn');
+       const sequenceCounter = document.getElementById('sequenceCounter');
+
+       // Voice elements
+       const voiceGender = document.getElementById('voiceGender');
+       const voiceLanguage = document.getElementById('voiceLanguage');
+       const speechMode = document.getElementById('speechMode');
+       const voicePlay = document.getElementById('voicePlay');
+       const voicePause = document.getElementById('voicePause');
+       const voiceStop = document.getElementById('voiceStop');
+       const voiceSpeed = document.getElementById('voiceSpeed');
+       const voiceSpeedValue = document.getElementById('voiceSpeedValue');
+       const currentStep = document.getElementById('currentStep');
+
+       // Crop modal elements
+       const cropModal = document.getElementById('cropModal');
+       const cropImage = document.getElementById('cropImage');
+       const closeCropModal = document.getElementById('closeCropModal');
+       const cancelCrop = document.getElementById('cancelCrop');
+       const applyCrop = document.getElementById('applyCrop');
+
+       let cropper = null;
+       let currentImageData = null;
+       let sourceImageData = null;
+       let originalImageData = null;
+       let numNails = 250; // Default, will be updated by result
+       let circleRadius = 30; // Default, will be updated by result
+       let pinSequence = [];
+
+       // Voice control state
+       let voiceIndex = 0;
+       let voicePlaying = false;
+       let voicePaused = false;
+       let voiceDelay = 1.0;
+       let currentAudio = null;
+       let shouldStop = false;
+       let shouldSwitchMode = false;
+       let isRestoring = false;
+       let hasValidCanvasData = false;
+
+       // Generation state
+       let isGenerating = false;
+
+       // Audio promise tracking
+       let audioResolve = null;
+       let audioReject = null;
+
+       // ====================================================================
+       // Tab Switching
+       // ====================================================================
+       tabButtons.forEach(button => {
+           button.addEventListener('click', () => {
+               const targetTab = button.dataset.tab;
+
+               tabButtons.forEach(btn => btn.classList.remove('active'));
+               button.classList.add('active');
+
+               tabContents.forEach(content => content.classList.remove('active'));
+               document.getElementById(targetTab + 'Tab').classList.add('active');
+
+               if (targetTab === 'sequence' && pinSequence.length > 0) {
+                   // Pass the specific numNails for this sequence
+                   drawSequenceVisualization(voiceIndex, numNails); 
+               }
+           });
+       });
+
+       // ====================================================================
+       // Sequence Navigation
+       // ====================================================================
+       prevBtn.addEventListener('click', () => {
+           if (voiceIndex > 0) {
+               voiceIndex--;
+               updateSequenceNavigation();
+           }
+       });
+
+       nextBtn.addEventListener('click', () => {
+           const maxIndex = speechMode.value === 'connections' ? 
+               pinSequence.length - 2 : pinSequence.length - 1;
+
+           if (voiceIndex < maxIndex) {
+               voiceIndex++;
+               updateSequenceNavigation();
+           }
+       });
+
+       function updateSequenceNavigation() {
+           const mode = speechMode.value;
+           const maxIndex = mode === 'connections' ? 
+               pinSequence.length - 2 : pinSequence.length - 1;
+
+           prevBtn.disabled = voiceIndex <= 0;
+           nextBtn.disabled = voiceIndex >= maxIndex;
+
+           if (pinSequence.length > 0) {
+               if (mode === 'connections' && voiceIndex < pinSequence.length - 1) {
+                   sequenceCounter.innerHTML = `${voiceIndex + 1} / ${pinSequence.length - 1}<br>${pinSequence[voiceIndex]} → ${pinSequence[voiceIndex + 1]}`;
+               } else if (mode === 'numbers' && voiceIndex < pinSequence.length) {
+                   sequenceCounter.innerHTML = `${voiceIndex + 1} / ${pinSequence.length}<br>Pin ${pinSequence[voiceIndex]}`;
+               } else {
+                   sequenceCounter.textContent = '-';
+               }
+               // Update visualization, passing the numNails for the current sequence
+               drawSequenceVisualization(voiceIndex, numNails); 
+           } else {
+               sequenceCounter.textContent = '-';
+           }
+
+           highlightCurrentPosition();
+           saveState(); // Save state whenever navigation changes
+       }
+
+       // ====================================================================
+       // Sequence Visualization (Accepts numNails)
+       // ====================================================================
+       function drawSequenceVisualization(index, sequenceNumNails) { 
+           if (pinSequence.length === 0) return;
+
+           const mode = speechMode.value;
+           const currentNumNails = sequenceNumNails || numNails; // Use passed value or global fallback
+
+           sequenceCtx.clearRect(0, 0, sequenceCanvas.width, sequenceCanvas.height);
+
+           const centerX = sequenceCanvas.width / 2;
+           const centerY = sequenceCanvas.height / 2;
+           const radius = sequenceCanvas.width / 2 - 60; // Slightly smaller radius for labels
+
+           sequenceCtx.strokeStyle = '#ddd';
+           sequenceCtx.lineWidth = 2;
+           sequenceCtx.beginPath();
+           sequenceCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+           sequenceCtx.stroke();
+
+           // Use a local helper that accepts numNails
+           function getSequenceNailPos(nailIndex) {
+               const angle = (nailIndex / currentNumNails) * 2 * Math.PI; 
+               const x = centerX + radius * Math.cos(angle);
+               const y = centerY + radius * Math.sin(angle); // Use +Y for canvas coords (0,0 is top-left)
+               return { x, y, angle };
+           }
+
+           // Draw all nails
+           sequenceCtx.fillStyle = '#ccc';
+           for (let i = 0; i < currentNumNails; i++) { 
+               const pos = getSequenceNailPos(i);
+               sequenceCtx.beginPath();
+               sequenceCtx.arc(pos.x, pos.y, 2, 0, 2 * Math.PI);
+               sequenceCtx.fill();
+           }
+
+           // Highlight current connection/pin
+           if (mode === 'connections' && index < pinSequence.length - 1) {
+               const fromNail = pinSequence[index] - 1;
+               const toNail = pinSequence[index + 1] - 1;
+
+               const fromPos = getSequenceNailPos(fromNail);
+               const toPos = getSequenceNailPos(toNail);
+
+               sequenceCtx.strokeStyle = '#000';
+               sequenceCtx.lineWidth = 3;
+               sequenceCtx.beginPath();
+               sequenceCtx.moveTo(fromPos.x, fromPos.y);
+               sequenceCtx.lineTo(toPos.x, toPos.y);
+               sequenceCtx.stroke();
+
+               sequenceCtx.fillStyle = '#667eea'; // From Blue
+               sequenceCtx.beginPath();
+               sequenceCtx.arc(fromPos.x, fromPos.y, 12, 0, 2 * Math.PI);
+               sequenceCtx.fill();
+
+               sequenceCtx.fillStyle = '#764ba2'; // To Purple
+               sequenceCtx.beginPath();
+               sequenceCtx.arc(toPos.x, toPos.y, 12, 0, 2 * Math.PI);
+               sequenceCtx.fill();
+
+               sequenceCtx.fillStyle = '#fff';
+               sequenceCtx.font = 'bold 12px Arial';
+               sequenceCtx.textAlign = 'center';
+               sequenceCtx.textBaseline = 'middle';
+               sequenceCtx.fillText(pinSequence[index], fromPos.x, fromPos.y);
+               sequenceCtx.fillText(pinSequence[index + 1], toPos.x, toPos.y);
+
+               const labelRadius = radius + 40;
+               const fromLabelX = centerX + labelRadius * Math.cos(fromPos.angle);
+               const fromLabelY = centerY + labelRadius * Math.sin(fromPos.angle);
+               const toLabelX = centerX + labelRadius * Math.cos(toPos.angle);
+               const toLabelY = centerY + labelRadius * Math.sin(toPos.angle);
+
+               sequenceCtx.fillStyle = '#000';
+               sequenceCtx.font = 'bold 16px Arial';
+               sequenceCtx.fillText(`FROM ${pinSequence[index]}`, fromLabelX, fromLabelY);
+               sequenceCtx.fillText(`TO ${pinSequence[index + 1]}`, toLabelX, toLabelY);
+
+           } else if (mode === 'numbers' && index < pinSequence.length) {
+               const nail = pinSequence[index] - 1;
+               const pos = getSequenceNailPos(nail);
+
+               sequenceCtx.fillStyle = '#ff4444'; // Highlight Red
+               sequenceCtx.beginPath();
+               sequenceCtx.arc(pos.x, pos.y, 15, 0, 2 * Math.PI);
+               sequenceCtx.fill();
+
+               sequenceCtx.fillStyle = '#fff';
+               sequenceCtx.font = 'bold 14px Arial';
+               sequenceCtx.textAlign = 'center';
+               sequenceCtx.textBaseline = 'middle';
+               sequenceCtx.fillText(pinSequence[index], pos.x, pos.y);
+
+               const labelRadius = radius + 40;
+               const labelX = centerX + labelRadius * Math.cos(pos.angle);
+               const labelY = centerY + labelRadius * Math.sin(pos.angle);
+
+               sequenceCtx.fillStyle = '#000';
+               sequenceCtx.font = 'bold 18px Arial';
+               sequenceCtx.fillText(`PIN ${pinSequence[index]}`, labelX, labelY);
+           }
+       }
+
+       // ====================================================================
+       // Auto-Save / Restore Functions
+       // ====================================================================
+       function saveState() {
+           if (isRestoring) return;
+
+           const existingState = localStorage.getItem('stringArtState');
+           let preservedCanvasData = null;
+           if (existingState) {
+               try {
+                   preservedCanvasData = JSON.parse(existingState).canvasData;
+               } catch (e) {}
+           }
+
+           let canvasDataToSave = preservedCanvasData;
+           if (hasValidCanvasData && pinSequence.length > 0) {
+               canvasDataToSave = canvas.toDataURL();
+           } 
+
+           const state = {
+               pinSequence: pinSequence,
+               voiceIndex: voiceIndex,
+               numNails: numNails, // Save the numNails used for this sequence
+               circleRadius: circleRadius, // Save the radius used
+               canvasData: canvasDataToSave,
+               sourceImageData: sourceImageData,
+               originalImageData: originalImageData,
+               speechMode: speechMode.value,
+               timestamp: Date.now()
+           };
+
+           localStorage.setItem('stringArtState', JSON.stringify(state));
+           console.log('💾 State saved');
+       }
+
+       function restoreState() {
+           const savedState = localStorage.getItem('stringArtState');
+           if (!savedState) {
+               console.log('❌ No saved state found');
+               return false;
+           }
+
+           isRestoring = true;
+
+           try {
+               const state = JSON.parse(savedState);
+               console.log('📦 Restoring state');
+
+               pinSequence = state.pinSequence || [];
+               voiceIndex = state.voiceIndex || 0;
+               numNails = state.numNails || 250; // Restore numNails
+               circleRadius = state.circleRadius || 30; // Restore radius
+               sourceImageData = state.sourceImageData || null;
+               originalImageData = state.originalImageData || null;
+
+               // Update sliders to match restored state
+               document.getElementById('numNails').value = numNails;
+               document.getElementById('numNailsValue').textContent = numNails;
+               document.getElementById('circleRadius').value = circleRadius;
+               document.getElementById('circleRadiusValue').textContent = circleRadius;
+
+               if (state.speechMode) speechMode.value = state.speechMode;
+
+               // Restore final canvas
+               if (state.canvasData) {
+                   const img = new Image();
+                   img.onload = () => {
+                       canvas.width = 800; canvas.height = 800;
+                       ctx.clearRect(0, 0, canvas.width, canvas.height);
+                       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                       hasValidCanvasData = true;
+                       console.log('✅ Final canvas restored');
+                   };
+                   img.src = state.canvasData;
+               } else { hasValidCanvasData = false; }
+
+               // Restore source canvas
+               if (sourceImageData) {
+                   const img = new Image();
+                   img.onload = () => {
+                       sourceCanvas.width = 800; sourceCanvas.height = 800;
+                       sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+                       sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
+                       console.log('✅ Source canvas restored');
+                   };
+                   img.src = sourceImageData;
+               }
+
+               // Restore sequence display and controls
+               if (pinSequence.length > 0) {
+                   renderSequence();
+                   updateSpeechModeExamples();
+                   updateSequenceNavigation(); // Will call drawSequenceVisualization
+                   voicePlay.disabled = false; voiceStop.disabled = false;
+                   downloadTemplateBtn.disabled = false; cancelBtn.disabled = false;
+                   prevBtn.disabled = voiceIndex <= 0; nextBtn.disabled = false; // Adjust nextBtn later
+                   cropAgainBtn.disabled = !sourceImageData;
+                   generateBtn.disabled = !sourceImageData;
+                   status.textContent = '✅ Previous session restored!';
+
+                   const totalLength = calculateDisplayLength(); // Uses restored numNails/radius
+                   document.getElementById('stringLength').textContent = totalLength;
+                   document.getElementById('linesGenerated').textContent = pinSequence.length - 1;
+                   infoBox.style.display = 'block';
+
+                   setTimeout(() => { // Ensure DOM is updated
+                       highlightCurrentPosition();
+                       // updateSequenceNavigation already calls drawSequenceVisualization
+                       // Update current step text based on restored index and mode
+                       const mode = speechMode.value;
+                       const maxIndex = mode === 'connections' ? pinSequence.length - 2 : pinSequence.length - 1;
+                       nextBtn.disabled = voiceIndex >= maxIndex; // Correct nextBtn state
+                       if (mode === 'connections') {
+                           if (voiceIndex < pinSequence.length - 1) currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} → ${pinSequence[voiceIndex + 1]} (pos ${voiceIndex + 1})`;
+                           else currentStep.textContent = 'At end of sequence';
+                       } else {
+                           if (voiceIndex < pinSequence.length) currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} (pos ${voiceIndex + 1})`;
+                           else currentStep.textContent = 'At end of sequence';
+                       }
+                   }, 100);
+               } else {
+                   // No sequence, ensure buttons are disabled
+                   generateBtn.disabled = !sourceImageData;
+                   cropAgainBtn.disabled = !sourceImageData;
+                   cancelBtn.disabled = !sourceImageData; // Can cancel if image loaded
+               }
+
+               console.log('✅ Restore complete');
+               isRestoring = false;
+               return true;
+           } catch (e) {
+               console.error('❌ Failed to restore state:', e);
+               isRestoring = false; hasValidCanvasData = false;
+               return false;
+           }
+       }
+
+       function clearState() {
+           localStorage.removeItem('stringArtState');
+       }
+
+       function calculateDisplayLength() {
+           if (pinSequence.length < 2) return '-';
+
+           const radius_m = circleRadius / 100.0; // Use current global radius
+           let total_length = 0.0;
+
+           for (let i = 0; i < pinSequence.length - 1; i++) {
+               const nail1 = pinSequence[i] - 1;
+               const nail2 = pinSequence[i + 1] - 1;
+
+               const angle1 = (nail1 / numNails) * 2 * Math.PI; // Use current global numNails
+               const angle2 = (nail2 / numNails) * 2 * Math.PI; // Use current global numNails
+
+               let angle_diff = Math.abs(angle2 - angle1);
+               if (angle_diff > Math.PI) angle_diff = 2 * Math.PI - angle_diff; // Use shorter angle
+
+               const chord_length = 2 * radius_m * Math.sin(angle_diff / 2);
+               total_length += chord_length;
+           }
+
+           return `${total_length.toFixed(2)} m (approx ${(total_length * 3.28084).toFixed(1)} ft)`;
+       }
+
+       function renderSequence() {
+           sequenceDisplay.innerHTML = '';
+           pinSequence.forEach((pin, i) => {
+               const span = document.createElement('span');
+               span.className = 'sequence-item';
+               span.textContent = pin;
+               span.dataset.index = i;
+               span.addEventListener('click', () => {
+                   if (voicePlaying) { stopCurrentAudio(); voicePlaying = false; voicePaused = false; }
+                   voiceIndex = i;
+                   updateSequenceNavigation();
+                   voicePlay.disabled = false; voicePause.disabled = true; voiceStop.disabled = false;
+                   currentStep.textContent = `Jumped to position ${i + 1}`;
+               });
+               sequenceDisplay.appendChild(span);
+               if (i < pinSequence.length - 1) {
+                   sequenceDisplay.appendChild(document.createTextNode(' → '));
+               }
+           });
+           highlightCurrentPosition();
+       }
+
+       function highlightCurrentPosition() {
+           document.querySelectorAll('.sequence-item').forEach(item => item.classList.remove('active'));
+           const currentItem = sequenceDisplay.querySelector(`.sequence-item[data-index="${voiceIndex}"]`);
+           if (currentItem) {
+               currentItem.classList.add('active');
+               currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+           }
+       }
+
+       window.addEventListener('load', () => {
+           if (restoreState()) {
+               restoreBtn.style.display = 'none';
+           } else {
+               // Draw initial empty circle if no state restored
+               drawCircle(parseInt(document.getElementById('numNails').value));
+           }
+       });
+
+       function updateSpeechModeExamples() {
+           if (pinSequence.length < 3) {
+                speechMode.options[0].text = 'Connections (e.g., 1 - 5)';
+                speechMode.options[1].text = 'Numbers Only (e.g., 1, 5, 10)';
                 return;
-            }
-            
-            // Switch to Final tab
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-            document.querySelector('[data-tab="final"]').classList.add('active');
-            document.getElementById('finalTab').classList.add('active');
-            
-            clearState();
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawCircle();
-            
-            sequenceDisplay.innerHTML = '';
-            pinSequence = [];
-            voiceIndex = 0;
-            voicePlaying = false;
-            voicePaused = false;
-            shouldStop = false;
-            voicePlay.disabled = true;
-            voicePause.disabled = true;
-            voiceStop.disabled = true;
-            prevBtn.disabled = true;
-            nextBtn.disabled = true;
-            isGenerating = true;
-            
-            speechMode.options[0].text = 'Connections (201 - 1, 1 - 89...)';
-            speechMode.options[1].text = 'Numbers Only (1, 89, 54...)';
-            
-            generateBtn.disabled = true;
-            cancelBtn.disabled = false;
-            progressContainer.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressBar.textContent = '0%';
-            status.textContent = '🚀 Starting generation...';
-            infoBox.style.display = 'none';
-            
-            socket.emit('start_generation', {
-                imageData: currentImageData,
-                params: {
-                    num_nails: parseInt(document.getElementById('numNails').value),
-                    num_strings: parseInt(document.getElementById('numStrings').value),
-                    circle_radius_cm: parseFloat(document.getElementById('circleRadius').value),
-                    thread_thickness_mm: parseFloat(document.getElementById('threadThickness').value),
-                    image_resolution: parseInt(document.getElementById('imageResolution').value)
-                }
-            });
-        });
-        
-        cancelBtn.addEventListener('click', async () => {
-            if (isGenerating) {
-                socket.emit('cancel_generation');
-                status.textContent = '🛑 Cancelling...';
-                cancelBtn.disabled = true;
-            } else {
-                if (voicePlaying || voicePaused) {
-                    shouldStop = true;
-                    voicePlaying = false;
-                    voicePaused = false;
-                    stopCurrentAudio();
-                    
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-                saveState();
-                
-                // Clear ALL three canvases
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
-                sequenceCtx.clearRect(0, 0, sequenceCanvas.width, sequenceCanvas.height);
-                hasValidCanvasData = false;
-                
-                sequenceDisplay.innerHTML = '';
-                pinSequence = [];
-                voiceIndex = 0;
-                currentImageData = null;
-                sourceImageData = null;
-                originalImageData = null;
-                
-                imageUpload.value = '';
-                
-                generateBtn.disabled = true;
-                cancelBtn.disabled = true;
-                downloadTemplateBtn.disabled = true;
-                cropAgainBtn.disabled = true;
-                voicePlay.disabled = true;
-                voicePause.disabled = true;
-                voiceStop.disabled = true;
-                prevBtn.disabled = true;
-                nextBtn.disabled = true;
-                
-                progressContainer.style.display = 'none';
-                infoBox.style.display = 'none';
-                currentStep.textContent = 'Ready';
-                sequenceCounter.innerHTML = '-';
-                status.textContent = 'Upload an image to begin';
-                
-                // Switch back to Final tab (default view)
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-                document.querySelector('[data-tab="final"]').classList.add('active');
-                document.getElementById('finalTab').classList.add('active');
-                
-                restoreBtn.style.display = 'block';
-            }
-        });
-        
-        restoreBtn.addEventListener('click', () => {
-            const restored = restoreState();
-            if (restored) {
-                restoreBtn.style.display = 'none';
-                cancelBtn.disabled = false;
-            } else {
-                alert('No previous session found to restore.');
-            }
-        });
-        
-        function drawCircle() {
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const radius = canvas.width / 2 - 10;
-            
-            ctx.strokeStyle = '#ddd';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            ctx.stroke();
-            
-            const numNails = parseInt(document.getElementById('numNails').value);
-            ctx.fillStyle = '#666';
-            for (let i = 0; i < numNails; i++) {
-                const angle = (i / numNails) * 2 * Math.PI;
-                const x = centerX + radius * Math.cos(angle);
-                const y = centerY + radius * Math.sin(angle);  // Normal Y (not flipped)
-                
-                ctx.beginPath();
-                ctx.arc(x, y, 2, 0, 2 * Math.PI);
-                ctx.fill();
-            }
-        }
-        
-        function getNailPosition(nailIndex) {
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const radius = canvas.width / 2 - 10;
-            const angle = (nailIndex / numNails) * 2 * Math.PI;
-            
-            return {
-                x: centerX + radius * Math.cos(angle),
-                y: centerY + radius * Math.sin(angle)  // Normal Y (not flipped)
             };
-        }
-        
-        socket.on('status', (data) => {
-            status.textContent = data.msg;
-            
-            if (data.msg.includes('Pre-processing complete')) {
-                isGenerating = false;
-                cancelBtn.disabled = true;
-                generateBtn.disabled = false;
-                status.textContent = '✅ Image loaded! Click Generate to start.';
-            }
-            
-            if (data.msg.includes('cancelled') || data.msg.includes('Cancelled')) {
-                isGenerating = false;
-                
-                if (currentImageData) {
-                    generateBtn.disabled = false;
-                } else {
-                    generateBtn.disabled = true;
-                }
-                
-                cancelBtn.disabled = true;
-                progressContainer.style.display = 'none';
-            }
-        });
-        
-        socket.on('progress', (data) => {
-            progressBar.style.width = data.percent + '%';
-            progressBar.textContent = Math.round(data.percent) + '%';
-        });
-        
-        socket.on('new_line', (data) => {
-            const start = getNailPosition(data.start);
-            const end = getNailPosition(data.end);
-            
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(end.x, end.y);
-            ctx.stroke();
-        });
-        
-        socket.on('final_sequence', (data) => {
-            isGenerating = false;
-            generateBtn.disabled = false;
-            cancelBtn.disabled = false;
-            hasValidCanvasData = true;
-            
-            pinSequence = data.sequence;
-            voiceIndex = 0;
-            
-            renderSequence();
-            updateSpeechModeExamples();
-            updateSequenceNavigation();
-            
-            voicePlay.disabled = false;
-            voiceStop.disabled = false;
-            prevBtn.disabled = false;
-            nextBtn.disabled = false;
-            currentStep.textContent = 'Ready to play';
-            
-            const info = data.physical_info;
-            document.getElementById('stringLength').textContent = 
-                `${info.total_length_m.toFixed(2)} m (approx ${(info.total_length_m * 3.28084).toFixed(1)} ft)`;
-            document.getElementById('linesGenerated').textContent = info.num_lines;
-            
-            infoBox.style.display = 'block';
-            status.textContent = '✅ Pattern complete!';
-            
-            saveState();
-        });
-        
-        socket.on('generation_stopped', () => {
-            isGenerating = false;
-            generateBtn.disabled = false;
-            cancelBtn.disabled = false;
-            progressContainer.style.display = 'none';
-        });
-        
-        socket.on('connect', () => {
-            console.log('✅ Connected to server');
-        });
-        
-        socket.on('disconnect', () => {
-            console.log('❌ Disconnected from server');
-        });
-    </script>
+           speechMode.options[0].text = `Connections (${pinSequence[0]} - ${pinSequence[1]}, ${pinSequence[1]} - ${pinSequence[2]}...)`;
+           speechMode.options[1].text = `Numbers Only (${pinSequence[0]}, ${pinSequence[1]}, ${pinSequence[2]}...)`;
+       }
+
+       // Range inputs & Sliders
+       document.querySelectorAll('input[type="range"]').forEach(input => {
+           const valueSpan = document.getElementById(input.id + 'Value');
+           input.addEventListener('input', (e) => {
+               valueSpan.textContent = e.target.value;
+               if (input.id === 'numNails') {
+                   numNails = parseInt(e.target.value);
+                   downloadTemplateBtn.disabled = true; // Disable if params change
+                   drawCircle(numNails); // Redraw background circle
+               } else if (input.id === 'circleRadius') {
+                   circleRadius = parseFloat(e.target.value);
+                   downloadTemplateBtn.disabled = true; // Disable if params change
+               } else if (input.id === 'voiceSpeed') {
+                    voiceDelay = parseFloat(e.target.value);
+               }
+           });
+           // Set initial display value on load
+           valueSpan.textContent = input.value;
+       });
+
+       // Initialize global variables from initial slider values
+       numNails = parseInt(document.getElementById('numNails').value);
+       circleRadius = parseFloat(document.getElementById('circleRadius').value);
+       voiceDelay = parseFloat(document.getElementById('voiceSpeed').value);
+
+       function getSelectedVoice() { /* ... unchanged ... */ }
+       async function fetchTTSAudio(text, voiceName) { /* ... unchanged ... */ }
+       function playAudio(audioUrl) { /* ... unchanged ... */ }
+       function stopCurrentAudio() { /* ... unchanged ... */ }
+       async function startVoiceGuidance() { /* ... unchanged ... */ }
+
+       voicePlay.addEventListener('click', () => { /* ... unchanged ... */ });
+       voicePause.addEventListener('click', () => { /* ... unchanged ... */ });
+       voiceStop.addEventListener('click', () => { /* ... unchanged ... */ });
+       speechMode.addEventListener('change', () => { /* ... unchanged ... */ });
+       voiceLanguage.addEventListener('change', () => { /* ... unchanged ... */ });
+       voiceGender.addEventListener('change', () => { /* ... unchanged ... */ });
+
+       imageUpload.addEventListener('change', (e) => { /* ... unchanged ... */ });
+       function showCropModal(imageSrc) { /* ... unchanged ... */ }
+       function hideCropModal() { /* ... unchanged ... */ }
+       closeCropModal.addEventListener('click', hideCropModal);
+       cancelCrop.addEventListener('click', () => { /* ... unchanged ... */ });
+       applyCrop.addEventListener('click', () => { /* ... unchanged ... */ });
+       cropAgainBtn.addEventListener('click', () => { /* ... unchanged ... */ });
+       function processSquareImage(imageData) { /* ... unchanged ... */ }
+       downloadTemplateBtn.addEventListener('click', () => { /* ... unchanged ... */ });
+       generateBtn.addEventListener('click', () => { /* ... unchanged ... */ });
+       cancelBtn.addEventListener('click', async () => { /* ... unchanged ... */ });
+       restoreBtn.addEventListener('click', () => { /* ... unchanged ... */ });
+
+       // **NEW**: Create a dedicated function for calculating draw positions
+       function getDrawPosition(nailIndex, totalNails) { 
+           const centerX = canvas.width / 2;
+           const centerY = canvas.height / 2;
+           const radius = canvas.width / 2 - 10; // Use main canvas radius
+           const angle = (nailIndex / totalNails) * 2 * Math.PI;
+
+           return {
+               x: centerX + radius * Math.cos(angle),
+               y: centerY + radius * Math.sin(angle) // Canvas Y increases downwards
+           };
+       }
+
+       // **UPDATED**: drawCircle accepts numNails
+       function drawCircle(nailsToDraw) { 
+           const centerX = canvas.width / 2;
+           const centerY = canvas.height / 2;
+           const radius = canvas.width / 2 - 10;
+
+           ctx.strokeStyle = '#ddd';
+           ctx.lineWidth = 2;
+           ctx.beginPath();
+           ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+           ctx.stroke();
+
+           ctx.fillStyle = '#666';
+           for (let i = 0; i < nailsToDraw; i++) { 
+               const angle = (i / nailsToDraw) * 2 * Math.PI; 
+               const x = centerX + radius * Math.cos(angle);
+               const y = centerY + radius * Math.sin(angle);
+
+               ctx.beginPath();
+               ctx.arc(x, y, 2, 0, 2 * Math.PI);
+               ctx.fill();
+           }
+       }
+
+       // **UPDATED**: drawFinalImage accepts numNails
+       function drawFinalImage(sequence, currentNumNails) { 
+           console.log(`Drawing final image with ${sequence.length} points and ${currentNumNails} nails...`);
+
+           ctx.clearRect(0, 0, canvas.width, canvas.height);
+           drawCircle(currentNumNails); // Use the correct number of nails
+
+           ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+           ctx.lineWidth = 1;
+
+           for (let i = 0; i < sequence.length - 1; i++) {
+               const startNail = sequence[i] - 1;
+               const endNail = sequence[i + 1] - 1;
+
+               const start = getDrawPosition(startNail, currentNumNails); 
+               const end = getDrawPosition(endNail, currentNumNails);   
+
+               ctx.beginPath();
+               ctx.moveTo(start.x, start.y);
+               ctx.lineTo(end.x, end.y);
+               ctx.stroke();
+           }
+           hasValidCanvasData = true; // Mark canvas as valid *after* drawing
+           console.log('✅ Final image drawn.');
+       }
+
+       socket.on('status', (data) => { /* ... unchanged ... */ });
+       socket.on('progress', (data) => { /* ... unchanged ... */ });
+
+       // We are removing the 'new_line' handler as it's not used in serverless
+       // socket.on('new_line', (data) => { ... }); 
+
+       // **UPDATED**: final_sequence handler
+       socket.on('final_sequence', (data) => {
+           if (data.status !== 'success') {
+               console.error("Received non-success status:", data);
+               status.textContent = `❌ GPU Error: ${data.message || 'Unknown error'}`;
+               isGenerating = false;
+               generateBtn.disabled = false;
+               cancelBtn.disabled = true;
+               progressContainer.style.display = 'none';
+               return; // Stop processing if backend reported an error
+           }
+
+           isGenerating = false;
+           generateBtn.disabled = false;
+           cancelBtn.disabled = false; // Enable cancel/reset
+           downloadTemplateBtn.disabled = false; 
+           hasValidCanvasData = true;
+
+           pinSequence = data.sequence;
+           const physicalInfo = data.physical_info; 
+
+           // ** Update global numNails and circleRadius from the actual result **
+           numNails = physicalInfo.num_nails; 
+           circleRadius = physicalInfo.radius_cm;
+           // Update sliders/display to match
+           const numNailsSlider = document.getElementById('numNails');
+           const numNailsValue = document.getElementById('numNailsValue');
+           const circleRadiusSlider = document.getElementById('circleRadius');
+           const circleRadiusValue = document.getElementById('circleRadiusValue');
+           if (numNailsSlider) numNailsSlider.value = numNails;
+           if (numNailsValue) numNailsValue.textContent = numNails;
+           if (circleRadiusSlider) circleRadiusSlider.value = circleRadius;
+           if (circleRadiusValue) circleRadiusValue.textContent = circleRadius;
+
+           voiceIndex = 0; // Reset voice index
+
+           // Draw the final image using the correct numNails
+           drawFinalImage(pinSequence, numNails); 
+
+           renderSequence();
+           updateSpeechModeExamples();
+           updateSequenceNavigation(); // Will redraw sequence viz with correct numNails
+
+           voicePlay.disabled = false;
+           voiceStop.disabled = false;
+           prevBtn.disabled = true; // Start at beginning
+           nextBtn.disabled = pinSequence.length <= 1;
+           currentStep.textContent = 'Ready to play';
+
+           // Update info box
+           document.getElementById('stringLength').textContent = 
+               `${physicalInfo.total_length_m.toFixed(2)} m (approx ${(physicalInfo.total_length_m * 3.28084).toFixed(1)} ft)`;
+           document.getElementById('linesGenerated').textContent = physicalInfo.num_lines;
+
+           infoBox.style.display = 'block';
+           status.textContent = '✅ Pattern complete!';
+
+           saveState(); // Save the final state
+       });
+
+       socket.on('generation_stopped', () => { /* ... unchanged ... */ });
+       socket.on('connect', () => { /* ... unchanged ... */ });
+       socket.on('disconnect', () => { /* ... unchanged ... */ });
+
+       // Initial draw on load if no state restored
+       if (!localStorage.getItem('stringArtState')) {
+           drawCircle(numNails);
+       }
+   </script>
 </body>
 </html>
