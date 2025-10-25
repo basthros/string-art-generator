@@ -1240,21 +1240,24 @@
         hasValidCanvasData = true; 
         console.log('✅ Final canvas restored');
         
-        // ✅ ADD: Make sure Final tab is visible after canvas loads
+        // Switch to Final tab after canvas loads
         setTimeout(() => {
             tabButtons.forEach(btn=>btn.classList.remove('active')); 
             tabContents.forEach(c=>c.classList.remove('active'));
-            document.querySelector('[data-tab="final"]').classList.add('active'); 
-            document.getElementById('finalTab').classList.add('active');
+            const finalTabBtn = document.querySelector('[data-tab="final"]');
+            const finalTabContent = document.getElementById('finalTab');
+            if (finalTabBtn) finalTabBtn.classList.add('active');
+            if (finalTabContent) finalTabContent.classList.add('active');
             console.log('✅ Switched to Final tab');
-        }, 100);
+        }, 200);
     };
-    img.onerror = () => {
-        console.error('❌ Failed to load canvas image');
+    img.onerror = (err) => {
+        console.error('❌ Failed to load final canvas:', err);
         hasValidCanvasData = false;
     };
     img.src = state.canvasData;
 } else { 
+    console.log('⚠️ No canvas data to restore');
     hasValidCanvasData = false; 
 }
                 
@@ -1304,7 +1307,14 @@
             }
         }
         
-        function clearState() { localStorage.removeItem('stringArtState'); }
+        function clearState() {
+            if (isRestoring) {
+                console.log('⚠️ Skipping clearState during restore');
+                return;
+    }
+    
+            localStorage.removeItem('stringArtState');
+    }
         
         function calculateDisplayLength() {
             if (pinSequence.length < 2) return '-';
@@ -1560,7 +1570,6 @@
         cancelBtn.disabled = false; 
         cropAgainBtn.disabled = false;
         
-        // ✅ CHANGED: Update status
         status.textContent = '⚙️ Sending to GPU for preprocessing...';
         
         tabButtons.forEach(btn=>btn.classList.remove('active')); 
@@ -1568,7 +1577,6 @@
         document.querySelector('[data-tab="source"]').classList.add('active'); 
         document.getElementById('sourceTab').classList.add('active');
         
-        // ✅✅✅ ADD THIS ENTIRE BLOCK - THIS IS WHAT'S MISSING!
         const params = {
             num_nails: parseInt(document.getElementById('numNails').value),
             num_strings: parseInt(document.getElementById('numStrings').value),
@@ -1583,8 +1591,9 @@
             imageData: imageData,
             params: params
         });
-        // ✅✅✅ END OF NEW BLOCK
-    };
+        
+        saveState();
+    };  // ← This closes img.onload
     img.src = imageData;
 }
         
@@ -1630,7 +1639,25 @@
             }
         });
         
-        restoreBtn.addEventListener('click', () => { if (restoreState()) { restoreBtn.style.display = 'none'; cancelBtn.disabled = false; } else { alert('No previous session found.'); } });
+        restoreBtn.addEventListener('click', () => {
+    console.log('🔄 Restore button clicked');
+    
+    const savedState = localStorage.getItem('stringArtState');
+    if (!savedState) {
+        alert('No saved state found!');
+        console.log('❌ No saved state in localStorage');
+        return;
+    }
+    
+    // Restore the state
+    const success = restoreState();
+    
+    if (success) {
+        status.textContent = '✅ Previous session restored!';
+    } else {
+        status.textContent = '❌ Failed to restore session';
+    }
+});
         
         // --- Drawing Functions ---
         function getDrawPosition(nailIndex, totalNails) { 
