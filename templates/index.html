@@ -905,6 +905,19 @@
         });
     }
         const socket = io();
+
+        socket.on('status', (data) => {
+            console.log('📨 Status update:', data.msg);
+            if (data.msg) {
+                status.textContent = data.msg;
+    }
+});
+
+        socket.on('preprocessing_complete', (data) => {
+            console.log('✅ Preprocessing complete:', data);
+            status.textContent = '🚀 READY! Generate will be FAST (data cached on GPU)';
+            generateBtn.disabled = false;
+});
         
         // Voice configuration
         const voiceConfig = {
@@ -1218,15 +1231,25 @@
                 if (state.speechMode) speechMode.value = state.speechMode;
                 
                 if (state.canvasData) {
-                    const img = new Image();
-                    img.onload = () => {
-                        canvas.width = 800; canvas.height = 800;
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        hasValidCanvasData = true; console.log('✅ Final canvas restored');
-                    };
-                    img.src = state.canvasData;
-                } else { hasValidCanvasData = false; }
+    const img = new Image();
+    img.onload = () => {
+        canvas.width = 800; 
+        canvas.height = 800;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        hasValidCanvasData = true; 
+        console.log('✅ Final canvas restored');
+        
+        // ✅ ADD: Switch to final tab so user can see the restored canvas
+        tabButtons.forEach(btn=>btn.classList.remove('active')); 
+        tabContents.forEach(c=>c.classList.remove('active'));
+        document.querySelector('[data-tab="final"]').classList.add('active'); 
+        document.getElementById('finalTab').classList.add('active');
+    };
+    img.src = state.canvasData;
+} else { 
+    hasValidCanvasData = false; 
+}
                 
                 if (sourceImageData) {
                     const img = new Image();
@@ -1530,7 +1553,7 @@
         cancelBtn.disabled = false; 
         cropAgainBtn.disabled = false;
         
-        // ✅ CHANGED: Update status message
+        // ✅ CHANGED: Update status
         status.textContent = '⚙️ Sending to GPU for preprocessing...';
         
         tabButtons.forEach(btn=>btn.classList.remove('active')); 
@@ -1538,19 +1561,22 @@
         document.querySelector('[data-tab="source"]').classList.add('active'); 
         document.getElementById('sourceTab').classList.add('active');
         
-        // ✅ NEW: Send to GPU for preprocessing
+        // ✅✅✅ ADD THIS ENTIRE BLOCK - THIS IS WHAT'S MISSING!
         const params = {
-    num_nails: parseInt(document.getElementById('numNails')?.value || 200),
-    num_strings: parseInt(document.getElementById('numStrings')?.value || 3000),  // ✅ Match generate button
-    image_resolution: parseInt(document.getElementById('imageResolution')?.value || 1024),
-    circle_radius_cm: parseFloat(document.getElementById('circleRadius')?.value || 30),
-    thread_thickness_mm: parseFloat(document.getElementById('threadThickness')?.value || 0.25)
-};
+            num_nails: parseInt(document.getElementById('numNails').value),
+            num_strings: parseInt(document.getElementById('numStrings').value),
+            image_resolution: parseInt(document.getElementById('imageResolution').value),
+            circle_radius_cm: parseFloat(document.getElementById('circleRadius').value),
+            thread_thickness_mm: parseFloat(document.getElementById('threadThickness').value)
+        };
+        
+        console.log('📤 Sending preprocessing request with params:', params);
         
         socket.emit('preprocess_image', {
             imageData: imageData,
             params: params
         });
+        // ✅✅✅ END OF NEW BLOCK
     };
     img.src = imageData;
 }
