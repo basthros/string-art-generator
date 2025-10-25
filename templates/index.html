@@ -1240,11 +1240,18 @@
         hasValidCanvasData = true; 
         console.log('✅ Final canvas restored');
         
-        // ✅ ADD: Switch to final tab so user can see the restored canvas
-        tabButtons.forEach(btn=>btn.classList.remove('active')); 
-        tabContents.forEach(c=>c.classList.remove('active'));
-        document.querySelector('[data-tab="final"]').classList.add('active'); 
-        document.getElementById('finalTab').classList.add('active');
+        // ✅ ADD: Make sure Final tab is visible after canvas loads
+        setTimeout(() => {
+            tabButtons.forEach(btn=>btn.classList.remove('active')); 
+            tabContents.forEach(c=>c.classList.remove('active'));
+            document.querySelector('[data-tab="final"]').classList.add('active'); 
+            document.getElementById('finalTab').classList.add('active');
+            console.log('✅ Switched to Final tab');
+        }, 100);
+    };
+    img.onerror = () => {
+        console.error('❌ Failed to load canvas image');
+        hasValidCanvasData = false;
     };
     img.src = state.canvasData;
 } else { 
