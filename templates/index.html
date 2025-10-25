@@ -1540,12 +1540,12 @@
         
         // ✅ NEW: Send to GPU for preprocessing
         const params = {
-            num_nails: parseInt(document.getElementById('numNails')?.value || 200),
-            num_max_lines: parseInt(document.getElementById('maxLines')?.value || 3000),
-            image_resolution: 1024,
-            circle_radius_cm: parseFloat(document.getElementById('radiusCm')?.value || 30),
-            thread_thickness_mm: parseFloat(document.getElementById('threadMm')?.value || 0.25)
-        };
+    num_nails: parseInt(document.getElementById('numNails')?.value || 200),
+    num_strings: parseInt(document.getElementById('numStrings')?.value || 3000),  // ✅ Match generate button
+    image_resolution: parseInt(document.getElementById('imageResolution')?.value || 1024),
+    circle_radius_cm: parseFloat(document.getElementById('circleRadius')?.value || 30),
+    thread_thickness_mm: parseFloat(document.getElementById('threadThickness')?.value || 0.25)
+};
         
         socket.emit('preprocess_image', {
             imageData: imageData,
@@ -1656,33 +1656,49 @@
         socket.on('progress', (data) => { progressBar.style.width = data.percent + '%'; progressBar.textContent = Math.round(data.percent) + '%'; });
         
         socket.on('final_sequence', (data) => {
-            if (data.status !== 'success') {
-                console.error("Received non-success status:", data); status.textContent = `❌ GPU Error: ${data.message || 'Unknown error'}`;
-                isGenerating=false; generateBtn.disabled=!!currentImageData; cancelBtn.disabled=true; progressContainer.style.display='none'; return; 
-            }
-            isGenerating = false; generateBtn.disabled = !!currentImageData; cancelBtn.disabled = false; downloadTemplateBtn.disabled = false; hasValidCanvasData = false; 
-            
-            pinSequence = data.sequence; const physicalInfo = data.physical_info; 
-            numNails = physicalInfo.num_nails; circleRadius = physicalInfo.radius_cm;
-            
-            document.getElementById('numNails').value = numNails; document.getElementById('numNailsValue').textContent = numNails;
-            document.getElementById('circleRadius').value = circleRadius; document.getElementById('circleRadiusValue').textContent = circleRadius;
-
-            voiceIndex = 0; 
-            // Start the animation INSTEAD of drawing instantly
-            animateDrawing(pinSequence, numNails); 
-            
-            renderSequence(); updateSpeechModeExamples(); updateSequenceNavigation(); 
-            
-            voicePlay.disabled = false; voiceStop.disabled = false; prevBtn.disabled = true; nextBtn.disabled = pinSequence.length <= 1;
-            currentStep.textContent = 'Ready to play';
-            
-            document.getElementById('stringLength').textContent = `${physicalInfo.total_length_m.toFixed(2)} m (approx ${(physicalInfo.total_length_m * 3.28084).toFixed(1)} ft)`;
-            document.getElementById('linesGenerated').textContent = physicalInfo.num_lines;
-            infoBox.style.display = 'block'; 
-            // Status will be updated by animateDrawing
-            // saveState() is now called at the end of animateDrawing
-        });
+    if (data.status !== 'success') {
+        console.error("Received non-success status:", data); 
+        status.textContent = `❌ GPU Error: ${data.message || 'Unknown error'}`;
+        isGenerating = false; 
+        generateBtn.disabled = false;  // ✅ FIXED: Enable button even on error
+        cancelBtn.disabled = true; 
+        progressContainer.style.display = 'none'; 
+        return; 
+    }
+    
+    isGenerating = false; 
+    generateBtn.disabled = false;  // ✅ FIXED: Enable button after success
+    cancelBtn.disabled = false; 
+    downloadTemplateBtn.disabled = false; 
+    hasValidCanvasData = false; 
+    
+    pinSequence = data.sequence; 
+    const physicalInfo = data.physical_info; 
+    numNails = physicalInfo.num_nails; 
+    circleRadius = physicalInfo.radius_cm;
+    
+    document.getElementById('numNails').value = numNails; 
+    document.getElementById('numNailsValue').textContent = numNails;
+    document.getElementById('circleRadius').value = circleRadius; 
+    document.getElementById('circleRadiusValue').textContent = circleRadius;
+    voiceIndex = 0; 
+    
+    animateDrawing(pinSequence, numNails); 
+    
+    renderSequence(); 
+    updateSpeechModeExamples(); 
+    updateSequenceNavigation(); 
+    
+    voicePlay.disabled = false; 
+    voiceStop.disabled = false; 
+    prevBtn.disabled = true; 
+    nextBtn.disabled = pinSequence.length <= 1;
+    currentStep.textContent = 'Ready to play';
+    
+    document.getElementById('stringLength').textContent = `${physicalInfo.total_length_m.toFixed(2)} m (approx ${(physicalInfo.total_length_m * 3.28084).toFixed(1)} ft)`;
+    document.getElementById('linesGenerated').textContent = physicalInfo.num_lines;
+    infoBox.style.display = 'block'; 
+});
         
         socket.on('generation_stopped', () => { isGenerating=false; generateBtn.disabled=!!currentImageData; cancelBtn.disabled=true; progressContainer.style.display='none'; });
         socket.on('connect', () => { console.log('✅ Connected to server'); });
