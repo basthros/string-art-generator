@@ -565,12 +565,13 @@
             outline: 1px solid #667eea;
             outline-color: rgba(102, 126, 234, 0.75);
         }
-        /* END OF NEW LINES */
 
-        @media (max-width: 1400px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
+        /* Image upload indicator */
+        .file-indicator {
+            font-size: 0.85em;
+            color: #28a745;
+            margin-top: 5px;
+            font-style: italic;
         }
 
         @media (max-width: 1400px) {
@@ -693,6 +694,7 @@
                 <div class="control-group">
                     <label for="imageUpload">📸 Upload Image</label>
                     <input type="file" id="imageUpload" accept="image/*">
+                    <div id="fileIndicator" class="file-indicator" style="display: none;">✓ Image loaded from previous session</div>
                 </div>
                 
                 <div class="control-group">
@@ -850,6 +852,9 @@
     </div>
 
     <script>
+        // ====================================================================
+        // Image Compression
+        // ====================================================================
         async function compressImage(file, maxWidth = 1024, quality = 0.85) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -863,63 +868,77 @@
             
                     img.onload = () => {
                         try {
-                        const canvas = document.createElement('canvas');
+                            const canvas = document.createElement('canvas');
                     
-                        // Resize to max width while maintaining aspect ratio
-                        let width = img.width;
-                        let height = img.height;
+                            // Resize to max width while maintaining aspect ratio
+                            let width = img.width;
+                            let height = img.height;
                     
-                        if (width > maxWidth) {
-                            height = (height * maxWidth) / width;
-                            width = maxWidth;
+                            if (width > maxWidth) {
+                                height = (height * maxWidth) / width;
+                                width = maxWidth;
+                            }
+                    
+                            canvas.width = width;
+                            canvas.height = height;
+                    
+                            const ctx = canvas.getContext('2d');
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                            ctx.drawImage(img, 0, 0, width, height);
+                    
+                            // Convert to JPEG with compression
+                            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    
+                            // Calculate compression ratio
+                            const originalSize = e.target.result.length;
+                            const compressedSize = compressedDataUrl.length;
+                            const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+                    
+                            console.log(`🗜️ Image compressed: ${(originalSize/1024/1024).toFixed(2)}MB → ${(compressedSize/1024/1024).toFixed(2)}MB (${ratio}% reduction)`);
+                    
+                            resolve(compressedDataUrl);
+                        } catch (error) {
+                            reject(error);
                         }
-                    
-                        canvas.width = width;
-                        canvas.height = height;
-                    
-                        const ctx = canvas.getContext('2d');
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        ctx.drawImage(img, 0, 0, width, height);
-                    
-                        // Convert to JPEG with compression
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                    
-                        // Calculate compression ratio
-                        const originalSize = e.target.result.length;
-                        const compressedSize = compressedDataUrl.length;
-                        const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
-                    
-                        console.log(`🗜️ Image compressed: ${(originalSize/1024/1024).toFixed(2)}MB → ${(compressedSize/1024/1024).toFixed(2)}MB (${ratio}% reduction)`);
-                    
-                        resolve(compressedDataUrl);
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
+                    };
             
-                img.src = e.target.result;
-            };
+                    img.src = e.target.result;
+                };
         
-            reader.readAsDataURL(file);
-        });
-    }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ====================================================================
+        // Socket.IO Setup
+        // ====================================================================
         const socket = io();
 
         socket.on('status', (data) => {
             console.log('📨 Status update:', data.msg);
             if (data.msg) {
                 status.textContent = data.msg;
-    }
-});
+            }
+        });
 
         socket.on('preprocessing_complete', (data) => {
             console.log('✅ Preprocessing complete:', data);
             status.textContent = '🚀 READY! Generate will be FAST (data cached on GPU)';
             generateBtn.disabled = false;
-});
+        });
+
+        socket.on('connect', () => { 
+            console.log('✅ Connected to server'); 
+        });
+
+        socket.on('disconnect', () => { 
+            console.log('❌ Disconnected from server'); 
+        });
         
-        // Voice configuration
+        // ====================================================================
+        // Voice Configuration
+        // ====================================================================
         const voiceConfig = {
             'en-GB': { male: 'Brian', female: 'Amy' },
             'es-US': { male: 'Miguel', female: 'Penelope' },
@@ -928,11 +947,14 @@
             'it-IT': { male: 'Giorgio', female: 'Carla' },
             'pt-BR': { male: 'Ricardo', female: 'Vitoria' },
             'ja-JP': { male: 'Takumi', female: 'Mizuki' },
-            'ko-KR': { male: 'Seoyeon', female: 'Seoyeon' } // Often uses same voice for M/F synth
+            'ko-KR': { male: 'Seoyeon', female: 'Seoyeon' }
         };
         
-        // Elements
+        // ====================================================================
+        // Element References
+        // ====================================================================
         const imageUpload = document.getElementById('imageUpload');
+        const fileIndicator = document.getElementById('fileIndicator');
         const generateBtn = document.getElementById('generateBtn');
         const cancelBtn = document.getElementById('cancelBtn');
         const restoreBtn = document.getElementById('restoreBtn');
@@ -949,12 +971,6 @@
         const progressBar = document.getElementById('progressBar');
         const infoBox = document.getElementById('infoBox');
         const sequenceDisplay = document.getElementById('sequenceDisplay');
-
-        // --- Trigger GPU Wake-up ---
-        imageUpload.addEventListener('click', () => {
-            console.log('⚡ User clicked upload, sending wake_gpu signal...');
-            socket.emit('wake_gpu');
-        });
         
         // Tab elements
         const tabButtons = document.querySelectorAll('.tab-button');
@@ -983,12 +999,15 @@
         const cancelCrop = document.getElementById('cancelCrop');
         const applyCrop = document.getElementById('applyCrop');
         
+        // ====================================================================
+        // State Variables
+        // ====================================================================
         let cropper = null;
         let currentImageData = null;
         let sourceImageData = null;
         let originalImageData = null;
-        let numNails = 250; // Default, will be updated by result/restore/slider
-        let circleRadius = 30; // Default, will be updated by result/restore/slider
+        let numNails = 250;
+        let circleRadius = 30;
         let pinSequence = [];
         
         // Voice control state
@@ -1004,13 +1023,22 @@
         
         // Generation state
         let isGenerating = false;
+        let cancelRequested = false;
         
         // Audio promise tracking
         let audioResolve = null;
         let audioReject = null;
 
         // Animation control
-        let animationFrameId = null; // To control the animation loop
+        let animationFrameId = null;
+
+        // ====================================================================
+        // GPU Wake-up Trigger
+        // ====================================================================
+        imageUpload.addEventListener('click', () => {
+            console.log('⚡ User clicked upload, sending wake_gpu signal...');
+            socket.emit('wake_gpu');
+        });
         
         // ====================================================================
         // Tab Switching
@@ -1024,6 +1052,11 @@
                 
                 tabContents.forEach(content => content.classList.remove('active'));
                 document.getElementById(targetTab + 'Tab').classList.add('active');
+                
+                // Save active tab to state
+                if (!isRestoring && pinSequence.length > 0) {
+                    saveState();
+                }
                 
                 if (targetTab === 'sequence' && pinSequence.length > 0) {
                     drawSequenceVisualization(voiceIndex, numNails); 
@@ -1077,19 +1110,19 @@
         }
         
         // ====================================================================
-        // Sequence Visualization (Accepts numNails)
+        // Sequence Visualization
         // ====================================================================
         function drawSequenceVisualization(index, sequenceNumNails) { 
             if (pinSequence.length === 0) return;
             
             const mode = speechMode.value;
-            const currentNumNails = sequenceNumNails || numNails; // Use passed value or global fallback
+            const currentNumNails = sequenceNumNails || numNails;
 
             sequenceCtx.clearRect(0, 0, sequenceCanvas.width, sequenceCanvas.height);
             
             const centerX = sequenceCanvas.width / 2;
             const centerY = sequenceCanvas.height / 2;
-            const radius = sequenceCanvas.width / 2 - 60; // Slightly smaller radius for labels
+            const radius = sequenceCanvas.width / 2 - 60;
             
             sequenceCtx.strokeStyle = '#ddd';
             sequenceCtx.lineWidth = 2;
@@ -1097,11 +1130,10 @@
             sequenceCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
             sequenceCtx.stroke();
             
-            // Use a local helper that accepts numNails
             function getSequenceNailPos(nailIndex) {
                 const angle = (nailIndex / currentNumNails) * 2 * Math.PI; 
                 const x = centerX + radius * Math.cos(angle);
-                const y = centerY + radius * Math.sin(angle); // Use +Y for canvas coords (0,0 is top-left)
+                const y = centerY + radius * Math.sin(angle);
                 return { x, y, angle };
             }
             
@@ -1129,12 +1161,12 @@
                 sequenceCtx.lineTo(toPos.x, toPos.y);
                 sequenceCtx.stroke();
                 
-                sequenceCtx.fillStyle = '#667eea'; // From Blue
+                sequenceCtx.fillStyle = '#667eea';
                 sequenceCtx.beginPath();
                 sequenceCtx.arc(fromPos.x, fromPos.y, 12, 0, 2 * Math.PI);
                 sequenceCtx.fill();
                 
-                sequenceCtx.fillStyle = '#764ba2'; // To Purple
+                sequenceCtx.fillStyle = '#764ba2';
                 sequenceCtx.beginPath();
                 sequenceCtx.arc(toPos.x, toPos.y, 12, 0, 2 * Math.PI);
                 sequenceCtx.fill();
@@ -1161,7 +1193,7 @@
                 const nail = pinSequence[index] - 1;
                 const pos = getSequenceNailPos(nail);
                 
-                sequenceCtx.fillStyle = '#ff4444'; // Highlight Red
+                sequenceCtx.fillStyle = '#ff4444';
                 sequenceCtx.beginPath();
                 sequenceCtx.arc(pos.x, pos.y, 15, 0, 2 * Math.PI);
                 sequenceCtx.fill();
@@ -1191,38 +1223,55 @@
             const existingState = localStorage.getItem('stringArtState');
             let preservedCanvasData = null;
             if (existingState) {
-                try { preservedCanvasData = JSON.parse(existingState).canvasData; } catch (e) {}
+                try { 
+                    preservedCanvasData = JSON.parse(existingState).canvasData; 
+                } catch (e) {}
             }
             
             let canvasDataToSave = preservedCanvasData;
-            // Only save canvas data if the animation/drawing is actually complete
             if (hasValidCanvasData && pinSequence.length > 0 && !animationFrameId) { 
                 canvasDataToSave = canvas.toDataURL();
             } 
             
+            // Get active tab
+            const activeTabButton = document.querySelector('.tab-button.active');
+            const activeTab = activeTabButton ? activeTabButton.dataset.tab : 'final';
+            
             const state = {
-                pinSequence: pinSequence, voiceIndex: voiceIndex,
-                numNails: numNails, circleRadius: circleRadius,
-                canvasData: canvasDataToSave, sourceImageData: sourceImageData,
-                originalImageData: originalImageData, speechMode: speechMode.value,
+                pinSequence: pinSequence,
+                voiceIndex: voiceIndex,
+                numNails: numNails,
+                circleRadius: circleRadius,
+                canvasData: canvasDataToSave,
+                sourceImageData: sourceImageData,
+                originalImageData: originalImageData,
+                speechMode: speechMode.value,
+                activeTab: activeTab,
                 timestamp: Date.now()
             };
+            
             localStorage.setItem('stringArtState', JSON.stringify(state));
-            console.log('💾 State saved');
+            console.log('💾 State saved with active tab:', activeTab);
         }
         
         function restoreState() {
             const savedState = localStorage.getItem('stringArtState');
-            if (!savedState) { console.log('❌ No saved state found'); return false; }
+            if (!savedState) { 
+                console.log('❌ No saved state found'); 
+                return false; 
+            }
             
             isRestoring = true;
             try {
                 const state = JSON.parse(savedState);
                 console.log('📦 Restoring state');
                 
-                pinSequence = state.pinSequence || []; voiceIndex = state.voiceIndex || 0;
-                numNails = state.numNails || 250; circleRadius = state.circleRadius || 30;
-                sourceImageData = state.sourceImageData || null; originalImageData = state.originalImageData || null;
+                pinSequence = state.pinSequence || [];
+                voiceIndex = state.voiceIndex || 0;
+                numNails = state.numNails || 250;
+                circleRadius = state.circleRadius || 30;
+                sourceImageData = state.sourceImageData || null;
+                originalImageData = state.originalImageData || null;
                 
                 document.getElementById('numNails').value = numNails;
                 document.getElementById('numNailsValue').textContent = numNails;
@@ -1230,55 +1279,89 @@
                 document.getElementById('circleRadiusValue').textContent = circleRadius;
                 if (state.speechMode) speechMode.value = state.speechMode;
                 
+                // Restore canvas data
                 if (state.canvasData) {
-    const img = new Image();
-    img.onload = () => {
-        canvas.width = 800; 
-        canvas.height = 800;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        hasValidCanvasData = true; 
-        console.log('✅ Final canvas restored');
-        
-        // Switch to Final tab after canvas loads
-        setTimeout(() => {
-            tabButtons.forEach(btn=>btn.classList.remove('active')); 
-            tabContents.forEach(c=>c.classList.remove('active'));
-            const finalTabBtn = document.querySelector('[data-tab="final"]');
-            const finalTabContent = document.getElementById('finalTab');
-            if (finalTabBtn) finalTabBtn.classList.add('active');
-            if (finalTabContent) finalTabContent.classList.add('active');
-            console.log('✅ Switched to Final tab');
-        }, 200);
-    };
-    img.onerror = (err) => {
-        console.error('❌ Failed to load final canvas:', err);
-        hasValidCanvasData = false;
-    };
-    img.src = state.canvasData;
-} else { 
-    console.log('⚠️ No canvas data to restore');
-    hasValidCanvasData = false; 
-}
+                    const img = new Image();
+                    img.onload = () => {
+                        canvas.width = 800; 
+                        canvas.height = 800;
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        hasValidCanvasData = true; 
+                        console.log('✅ Final canvas restored');
+                        
+                        // Restore active tab after canvas loads
+                        setTimeout(() => {
+                            const savedTab = state.activeTab || 'final';
+                            tabButtons.forEach(btn => btn.classList.remove('active'));
+                            tabContents.forEach(c => c.classList.remove('active'));
+                            
+                            const targetButton = document.querySelector(`[data-tab="${savedTab}"]`);
+                            const targetContent = document.getElementById(savedTab + 'Tab');
+                            
+                            if (targetButton) targetButton.classList.add('active');
+                            if (targetContent) targetContent.classList.add('active');
+                            
+                            console.log('✅ Restored to tab:', savedTab);
+                        }, 100);
+                    };
+                    img.onerror = (err) => {
+                        console.error('❌ Failed to load final canvas:', err);
+                        hasValidCanvasData = false;
+                    };
+                    img.src = state.canvasData;
+                } else { 
+                    console.log('⚠️ No canvas data to restore');
+                    hasValidCanvasData = false;
+                    
+                    // Still restore the tab
+                    setTimeout(() => {
+                        const savedTab = state.activeTab || 'final';
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        tabContents.forEach(c => c.classList.remove('active'));
+                        
+                        const targetButton = document.querySelector(`[data-tab="${savedTab}"]`);
+                        const targetContent = document.getElementById(savedTab + 'Tab');
+                        
+                        if (targetButton) targetButton.classList.add('active');
+                        if (targetContent) targetContent.classList.add('active');
+                        
+                        console.log('✅ Restored to tab:', savedTab);
+                    }, 100);
+                }
                 
+                // Restore source canvas
                 if (sourceImageData) {
                     const img = new Image();
                     img.onload = () => {
-                        sourceCanvas.width = 800; sourceCanvas.height = 800;
+                        sourceCanvas.width = 800;
+                        sourceCanvas.height = 800;
                         sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
                         sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
                         console.log('✅ Source canvas restored');
+                        
+                        // Show file indicator
+                        fileIndicator.style.display = 'block';
+                        currentImageData = sourceImageData;
                     };
                     img.src = sourceImageData;
                 }
                 
+                // Restore sequence and UI state
                 if (pinSequence.length > 0) {
-                    renderSequence(); updateSpeechModeExamples(); updateSequenceNavigation();
-                    voicePlay.disabled = false; voiceStop.disabled = false;
-                    downloadTemplateBtn.disabled = false; cancelBtn.disabled = false;
-                    prevBtn.disabled = voiceIndex <= 0; nextBtn.disabled = false; 
-                    cropAgainBtn.disabled = !sourceImageData; generateBtn.disabled = !sourceImageData;
+                    renderSequence();
+                    updateSpeechModeExamples();
+                    updateSequenceNavigation();
+                    voicePlay.disabled = false;
+                    voiceStop.disabled = false;
+                    downloadTemplateBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    prevBtn.disabled = voiceIndex <= 0;
+                    nextBtn.disabled = false;
+                    cropAgainBtn.disabled = !sourceImageData;
+                    generateBtn.disabled = !sourceImageData;
                     status.textContent = '✅ Previous session restored!';
+                    
                     const totalLength = calculateDisplayLength(); 
                     document.getElementById('stringLength').textContent = totalLength;
                     document.getElementById('linesGenerated').textContent = pinSequence.length - 1;
@@ -1290,20 +1373,33 @@
                         const maxIndex = mode === 'connections' ? pinSequence.length - 2 : pinSequence.length - 1;
                         nextBtn.disabled = voiceIndex >= maxIndex; 
                         if (mode === 'connections') {
-                            if (voiceIndex < pinSequence.length - 1) currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} → ${pinSequence[voiceIndex + 1]} (pos ${voiceIndex + 1})`;
-                            else currentStep.textContent = 'At end of sequence';
+                            if (voiceIndex < pinSequence.length - 1) {
+                                currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} → ${pinSequence[voiceIndex + 1]} (pos ${voiceIndex + 1})`;
+                            } else {
+                                currentStep.textContent = 'At end of sequence';
+                            }
                         } else {
-                            if (voiceIndex < pinSequence.length) currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} (pos ${voiceIndex + 1})`;
-                            else currentStep.textContent = 'At end of sequence';
+                            if (voiceIndex < pinSequence.length) {
+                                currentStep.textContent = `Restored to: ${pinSequence[voiceIndex]} (pos ${voiceIndex + 1})`;
+                            } else {
+                                currentStep.textContent = 'At end of sequence';
+                            }
                         }
                     }, 100);
                 } else {
-                    generateBtn.disabled = !sourceImageData; cropAgainBtn.disabled = !sourceImageData;
+                    generateBtn.disabled = !sourceImageData;
+                    cropAgainBtn.disabled = !sourceImageData;
                     cancelBtn.disabled = !sourceImageData; 
                 }
-                console.log('✅ Restore complete'); isRestoring = false; return true;
+                
+                console.log('✅ Restore complete');
+                isRestoring = false;
+                return true;
             } catch (e) {
-                console.error('❌ Failed to restore state:', e); isRestoring = false; hasValidCanvasData = false; return false;
+                console.error('❌ Failed to restore state:', e);
+                isRestoring = false;
+                hasValidCanvasData = false;
+                return false;
             }
         }
         
@@ -1311,18 +1407,23 @@
             if (isRestoring) {
                 console.log('⚠️ Skipping clearState during restore');
                 return;
-    }
-    
+            }
+            
             localStorage.removeItem('stringArtState');
-    }
+        }
         
+        // ====================================================================
+        // Calculation Functions
+        // ====================================================================
         function calculateDisplayLength() {
             if (pinSequence.length < 2) return '-';
             const radius_m = circleRadius / 100.0; 
             let total_length = 0.0;
             for (let i = 0; i < pinSequence.length - 1; i++) {
-                const nail1 = pinSequence[i] - 1; const nail2 = pinSequence[i + 1] - 1;
-                const angle1 = (nail1 / numNails) * 2 * Math.PI; const angle2 = (nail2 / numNails) * 2 * Math.PI; 
+                const nail1 = pinSequence[i] - 1;
+                const nail2 = pinSequence[i + 1] - 1;
+                const angle1 = (nail1 / numNails) * 2 * Math.PI;
+                const angle2 = (nail2 / numNails) * 2 * Math.PI; 
                 let angle_diff = Math.abs(angle2 - angle1);
                 if (angle_diff > Math.PI) angle_diff = 2 * Math.PI - angle_diff; 
                 total_length += 2 * radius_m * Math.sin(angle_diff / 2);
@@ -1330,19 +1431,33 @@
             return `${total_length.toFixed(2)} m (approx ${(total_length * 3.28084).toFixed(1)} ft)`;
         }
         
+        // ====================================================================
+        // Sequence Display Functions
+        // ====================================================================
         function renderSequence() {
             sequenceDisplay.innerHTML = '';
             pinSequence.forEach((pin, i) => {
                 const span = document.createElement('span');
-                span.className = 'sequence-item'; span.textContent = pin; span.dataset.index = i;
+                span.className = 'sequence-item';
+                span.textContent = pin;
+                span.dataset.index = i;
                 span.addEventListener('click', () => {
-                    if (voicePlaying) { stopCurrentAudio(); voicePlaying = false; voicePaused = false; }
-                    voiceIndex = i; updateSequenceNavigation();
-                    voicePlay.disabled = false; voicePause.disabled = true; voiceStop.disabled = false;
+                    if (voicePlaying) {
+                        stopCurrentAudio();
+                        voicePlaying = false;
+                        voicePaused = false;
+                    }
+                    voiceIndex = i;
+                    updateSequenceNavigation();
+                    voicePlay.disabled = false;
+                    voicePause.disabled = true;
+                    voiceStop.disabled = false;
                     currentStep.textContent = `Jumped to position ${i + 1}`;
                 });
                 sequenceDisplay.appendChild(span);
-                if (i < pinSequence.length - 1) sequenceDisplay.appendChild(document.createTextNode(' → '));
+                if (i < pinSequence.length - 1) {
+                    sequenceDisplay.appendChild(document.createTextNode(' → '));
+                }
             });
             highlightCurrentPosition();
         }
@@ -1356,22 +1471,31 @@
             }
         }
         
-        window.addEventListener('load', () => {
-            if (restoreState()) { restoreBtn.style.display = 'none'; } 
-            else { drawCircle(numNails); } // Initial draw with default nails
-        });
-        
         function updateSpeechModeExamples() {
-             if (pinSequence.length < 3) {
-                 speechMode.options[0].text = 'Connections (e.g., 1 - 5)';
-                 speechMode.options[1].text = 'Numbers Only (e.g., 1, 5, 10)';
-                 return;
-             };
+            if (pinSequence.length < 3) {
+                speechMode.options[0].text = 'Connections (e.g., 1 - 5)';
+                speechMode.options[1].text = 'Numbers Only (e.g., 1, 5, 10)';
+                return;
+            }
             speechMode.options[0].text = `Connections (${pinSequence[0]} - ${pinSequence[1]}, ${pinSequence[1]} - ${pinSequence[2]}...)`;
             speechMode.options[1].text = `Numbers Only (${pinSequence[0]}, ${pinSequence[1]}, ${pinSequence[2]}...)`;
         }
         
-        // Range inputs & Sliders
+        // ====================================================================
+        // Page Load Handler
+        // ====================================================================
+        window.addEventListener('load', () => {
+            const restored = restoreState();
+            if (restored) {
+                restoreBtn.style.display = 'none';
+            } else {
+                drawCircle(numNails);
+            }
+        });
+        
+        // ====================================================================
+        // Range Input Handlers
+        // ====================================================================
         document.querySelectorAll('input[type="range"]').forEach(input => {
             const valueSpan = document.getElementById(input.id + 'Value');
             input.addEventListener('input', (e) => {
@@ -1386,7 +1510,7 @@
                     downloadTemplateBtn.disabled = true;
                     if (pinSequence.length > 0) disableSequenceFeatures(); 
                 } else if (input.id === 'voiceSpeed') {
-                     voiceDelay = parseFloat(e.target.value);
+                    voiceDelay = parseFloat(e.target.value);
                 }
             });
             valueSpan.textContent = input.value;
@@ -1398,16 +1522,23 @@
         voiceDelay = parseFloat(document.getElementById('voiceSpeed').value);
 
         function disableSequenceFeatures() {
-             console.warn("Parameters changed, disabling sequence features.");
-             voicePlay.disabled = true; voicePause.disabled = true; voiceStop.disabled = true;
-             prevBtn.disabled = true; nextBtn.disabled = true;
-             sequenceDisplay.style.opacity = 0.5; 
-             currentStep.textContent = "Params changed"; sequenceCounter.innerHTML = "-";
+            console.warn("Parameters changed, disabling sequence features.");
+            voicePlay.disabled = true;
+            voicePause.disabled = true;
+            voiceStop.disabled = true;
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+            sequenceDisplay.style.opacity = 0.5; 
+            currentStep.textContent = "Params changed";
+            sequenceCounter.innerHTML = "-";
         }
 
-        // --- Voice Guidance Functions ---
+        // ====================================================================
+        // Voice Guidance Functions
+        // ====================================================================
         function getSelectedVoice() {
-            const gender = voiceGender.value; const language = voiceLanguage.value;
+            const gender = voiceGender.value;
+            const language = voiceLanguage.value;
             return voiceConfig[language][gender];
         }
         
@@ -1416,124 +1547,296 @@
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`TTS request failed: ${response.status}`);
-                const audioBlob = await response.blob(); return URL.createObjectURL(audioBlob);
-            } catch (error) { console.error('TTS Error:', error); return null; }
+                const audioBlob = await response.blob();
+                return URL.createObjectURL(audioBlob);
+            } catch (error) {
+                console.error('TTS Error:', error);
+                return null;
+            }
         }
         
         function playAudio(audioUrl) {
             return new Promise((resolve, reject) => {
-                audioResolve = resolve; audioReject = reject; currentAudio = new Audio(audioUrl);
-                currentAudio.onended = () => { URL.revokeObjectURL(audioUrl); currentAudio = null; audioResolve = null; audioReject = null; resolve(); };
-                currentAudio.onerror = (e) => { console.error("Audio Playback Error:", e); URL.revokeObjectURL(audioUrl); currentAudio = null; audioResolve = null; audioReject = null; reject(e); };
-                currentAudio.play().catch((e) => { console.error("Audio Play Failed:", e); URL.revokeObjectURL(audioUrl); currentAudio = null; audioResolve = null; audioReject = null; reject(e); });
+                audioResolve = resolve;
+                audioReject = reject;
+                currentAudio = new Audio(audioUrl);
+                currentAudio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                    audioResolve = null;
+                    audioReject = null;
+                    resolve();
+                };
+                currentAudio.onerror = (e) => {
+                    console.error("Audio Playback Error:", e);
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                    audioResolve = null;
+                    audioReject = null;
+                    reject(e);
+                };
+                currentAudio.play().catch((e) => {
+                    console.error("Audio Play Failed:", e);
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                    audioResolve = null;
+                    audioReject = null;
+                    reject(e);
+                });
             });
         }
         
         function stopCurrentAudio() {
-            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
-            if (audioReject) { audioReject(new Error('Audio stopped')); audioResolve = null; audioReject = null; }
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            if (audioReject) {
+                audioReject(new Error('Audio stopped'));
+                audioResolve = null;
+                audioReject = null;
+            }
         }
         
         async function startVoiceGuidance() {
-            if (pinSequence.length < 2) { alert('No sequence to read!'); return; }
-            voicePlaying = true; voicePaused = false; shouldStop = false; shouldSwitchMode = false;
-            voicePlay.disabled = true; voicePause.disabled = false; voiceStop.disabled = false;
+            if (pinSequence.length < 2) {
+                alert('No sequence to read!');
+                return;
+            }
+            voicePlaying = true;
+            voicePaused = false;
+            shouldStop = false;
+            shouldSwitchMode = false;
+            voicePlay.disabled = true;
+            voicePause.disabled = false;
+            voiceStop.disabled = false;
+            
             while (voicePlaying && !shouldStop) {
-                if (shouldSwitchMode) { shouldSwitchMode = false; }
+                if (shouldSwitchMode) {
+                    shouldSwitchMode = false;
+                }
                 const mode = speechMode.value;
                 const maxIndex = mode === 'connections' ? pinSequence.length - 2 : pinSequence.length - 1;
                 if (voiceIndex > maxIndex) break; 
-                while (voicePaused && voicePlaying && !shouldStop) await new Promise(resolve => setTimeout(resolve, 100)); 
+                
+                while (voicePaused && voicePlaying && !shouldStop) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
                 if (shouldStop || !voicePlaying) break; 
-                const voiceName = getSelectedVoice(); let text = '';
-                if (mode === 'connections') text = `${pinSequence[voiceIndex]} - ${pinSequence[voiceIndex + 1]}`;
-                else text = `${pinSequence[voiceIndex]}`;
-                currentStep.textContent = text; highlightCurrentPosition(); updateSequenceNavigation();
+                
+                const voiceName = getSelectedVoice();
+                let text = '';
+                if (mode === 'connections') {
+                    text = `${pinSequence[voiceIndex]} - ${pinSequence[voiceIndex + 1]}`;
+                } else {
+                    text = `${pinSequence[voiceIndex]}`;
+                }
+                
+                currentStep.textContent = text;
+                highlightCurrentPosition();
+                updateSequenceNavigation();
+                
                 let audioCompleted = false;
                 try {
                     const audioUrl = await fetchTTSAudio(text, voiceName);
-                    if (!audioUrl || shouldStop || voicePaused || !voicePlaying || shouldSwitchMode) { if (audioUrl) URL.revokeObjectURL(audioUrl); continue; }
+                    if (!audioUrl || shouldStop || voicePaused || !voicePlaying || shouldSwitchMode) {
+                        if (audioUrl) URL.revokeObjectURL(audioUrl);
+                        continue;
+                    }
                     await playAudio(audioUrl);
                     if (shouldStop || voicePaused || !voicePlaying || shouldSwitchMode) continue;
                     audioCompleted = true;
+                    
                     if (voiceDelay > 0) {
                         await new Promise(resolve => setTimeout(resolve, voiceDelay * 1000));
                         if (shouldStop || voicePaused || !voicePlaying || shouldSwitchMode) continue;
                     }
-                } catch (error) { console.error('Audio playback error:', error); continue; }
-                if (audioCompleted && !shouldStop && !voicePaused && voicePlaying && !shouldSwitchMode) { voiceIndex++; saveState(); highlightCurrentPosition(); updateSequenceNavigation(); }
+                } catch (error) {
+                    console.error('Audio playback error:', error);
+                    continue;
+                }
+                
+                if (audioCompleted && !shouldStop && !voicePaused && voicePlaying && !shouldSwitchMode) {
+                    voiceIndex++;
+                    saveState();
+                    highlightCurrentPosition();
+                    updateSequenceNavigation();
+                }
             } 
-            const finalMode = speechMode.value; const finalMaxIndex = finalMode === 'connections' ? pinSequence.length - 2 : pinSequence.length - 1;
-            if (voiceIndex > finalMaxIndex && !shouldStop) { currentStep.textContent = '✅ Completed!'; voiceIndex = 0; saveState(); highlightCurrentPosition(); updateSequenceNavigation(); } 
-            else if (shouldStop) { currentStep.textContent = '⏹ Stopped'; saveState(); highlightCurrentPosition(); } 
-            else if (voicePaused) { currentStep.textContent = '⏸ Paused'; saveState(); }
+            
+            const finalMode = speechMode.value;
+            const finalMaxIndex = finalMode === 'connections' ? pinSequence.length - 2 : pinSequence.length - 1;
+            
+            if (voiceIndex > finalMaxIndex && !shouldStop) {
+                currentStep.textContent = '✅ Completed!';
+                voiceIndex = 0;
+                saveState();
+                highlightCurrentPosition();
+                updateSequenceNavigation();
+            } else if (shouldStop) {
+                currentStep.textContent = '⏹ Stopped';
+                saveState();
+                highlightCurrentPosition();
+            } else if (voicePaused) {
+                currentStep.textContent = '⏸ Paused';
+                saveState();
+            }
+            
             voicePlaying = false;
-            if (!voicePaused) { voicePlay.disabled = false; voicePause.disabled = true; voiceStop.disabled = true; }
+            if (!voicePaused) {
+                voicePlay.disabled = false;
+                voicePause.disabled = true;
+                voiceStop.disabled = true;
+            }
         }
         
-        // --- Event Listeners ---
-        voicePlay.addEventListener('click', () => { if (voicePaused) { voicePaused = false; currentStep.textContent = 'Resuming...'; startVoiceGuidance(); } else { startVoiceGuidance(); } });
+        // ====================================================================
+        // Voice Control Event Listeners
+        // ====================================================================
+        voicePlay.addEventListener('click', () => {
+            if (voicePaused) {
+                voicePaused = false;
+                currentStep.textContent = 'Resuming...';
+                startVoiceGuidance();
+            } else {
+                startVoiceGuidance();
+            }
+        });
+        
         voicePause.addEventListener('click', () => {
-            voicePaused = true; voicePlaying = false; stopCurrentAudio(); voicePlay.disabled = false; voicePause.disabled = true;
+            voicePaused = true;
+            voicePlaying = false;
+            stopCurrentAudio();
+            voicePlay.disabled = false;
+            voicePause.disabled = true;
             const mode = speechMode.value;
-            if (mode === 'connections' && voiceIndex < pinSequence.length - 1) currentStep.textContent = `⏸ Paused at: ${pinSequence[voiceIndex]} - ${pinSequence[voiceIndex + 1]}`;
-            else if (mode === 'numbers' && voiceIndex < pinSequence.length) currentStep.textContent = `⏸ Paused at: ${pinSequence[voiceIndex]}`;
+            if (mode === 'connections' && voiceIndex < pinSequence.length - 1) {
+                currentStep.textContent = `⏸ Paused at: ${pinSequence[voiceIndex]} - ${pinSequence[voiceIndex + 1]}`;
+            } else if (mode === 'numbers' && voiceIndex < pinSequence.length) {
+                currentStep.textContent = `⏸ Paused at: ${pinSequence[voiceIndex]}`;
+            }
             saveState();
         });
-        voiceStop.addEventListener('click', () => { shouldStop = true; voicePlaying = false; voicePaused = false; voiceIndex = 0; stopCurrentAudio(); voicePlay.disabled = false; voicePause.disabled = true; voiceStop.disabled = true; currentStep.textContent = '⏹ Stopped'; saveState(); highlightCurrentPosition(); updateSequenceNavigation(); });
-        speechMode.addEventListener('change', () => { if (voicePlaying) { shouldSwitchMode = true; stopCurrentAudio(); } highlightCurrentPosition(); updateSequenceNavigation(); if (pinSequence.length > 0) saveState(); });
-        voiceLanguage.addEventListener('change', () => { if (voicePlaying) { shouldSwitchMode = true; stopCurrentAudio(); } });
-        voiceGender.addEventListener('change', () => { if (voicePlaying) { shouldSwitchMode = true; stopCurrentAudio(); } });
         
-       imageUpload.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    try {
-        // ✅ NEW: Compress the image first
-        console.log('🗜️ Compressing image...');
-        const compressedImage = await compressImage(file, 1024, 0.85);
+        voiceStop.addEventListener('click', () => {
+            shouldStop = true;
+            voicePlaying = false;
+            voicePaused = false;
+            voiceIndex = 0;
+            stopCurrentAudio();
+            voicePlay.disabled = false;
+            voicePause.disabled = true;
+            voiceStop.disabled = true;
+            currentStep.textContent = '⏹ Stopped';
+            saveState();
+            highlightCurrentPosition();
+            updateSequenceNavigation();
+        });
         
-        // Store compressed version for later use
-        originalImageData = compressedImage;
-        
-        // Load the compressed image
-        const img = new Image();
-        img.onload = () => {
-            // YOUR EXISTING LOGIC: Check if square
-            if (img.width === img.height) {
-                processSquareImage(compressedImage);  // Use compressed version
-            } else {
-                showCropModal(compressedImage);  // Use compressed version
+        speechMode.addEventListener('change', () => {
+            if (voicePlaying) {
+                shouldSwitchMode = true;
+                stopCurrentAudio();
             }
-        };
-        img.onerror = () => alert('Failed to load image.');
-        img.src = compressedImage;
+            highlightCurrentPosition();
+            updateSequenceNavigation();
+            if (pinSequence.length > 0) saveState();
+        });
         
-    } catch (error) {
-        console.error('Error processing image:', error);
-        alert('Failed to read file.');
-    }
-});
+        voiceLanguage.addEventListener('change', () => {
+            if (voicePlaying) {
+                shouldSwitchMode = true;
+                stopCurrentAudio();
+            }
+        });
         
+        voiceGender.addEventListener('change', () => {
+            if (voicePlaying) {
+                shouldSwitchMode = true;
+                stopCurrentAudio();
+            }
+        });
+        
+        // ====================================================================
+        // Image Upload Handler
+        // ====================================================================
+        imageUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                console.log('🗜️ Compressing image...');
+                const compressedImage = await compressImage(file, 1024, 0.85);
+                
+                originalImageData = compressedImage;
+                
+                const img = new Image();
+                img.onload = () => {
+                    if (img.width === img.height) {
+                        processSquareImage(compressedImage);
+                    } else {
+                        showCropModal(compressedImage);
+                    }
+                };
+                img.onerror = () => alert('Failed to load image.');
+                img.src = compressedImage;
+                
+                // Hide the file indicator since user is uploading new image
+                fileIndicator.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error processing image:', error);
+                alert('Failed to read file.');
+            }
+        });
+        
+        // ====================================================================
+        // Crop Modal Functions
+        // ====================================================================
         function showCropModal(imageSrc) {
-            cropImage.src = imageSrc; cropModal.style.display = 'block';
+            cropImage.src = imageSrc;
+            cropModal.style.display = 'block';
             cropImage.onload = () => {
                 if (cropper) cropper.destroy();
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
                 cropper = new Cropper(cropImage, {
-                    aspectRatio: 1, viewMode: 1, autoCropArea: 0.9, responsive: true, restore: false, guides: true,
-                    center: true, highlight: false, cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false,
-                    dragMode: 'move', wheelZoomRatio: 0.1,
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    autoCropArea: 0.9,
+                    responsive: true,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                    dragMode: 'move',
+                    wheelZoomRatio: 0.1,
                     ready: function() {
                         if (isMobile) {
                             document.getElementById('cropControls').style.display = 'block';
-                            const imageElement = this.cropper.image; let initialDistance = 0; let currentScale = 1;
+                            const imageElement = this.cropper.image;
+                            let initialDistance = 0;
+                            let currentScale = 1;
                             imageElement.addEventListener('touchstart', function(e) {
-                                if (e.touches.length === 2) { e.preventDefault(); const t1=e.touches[0], t2=e.touches[1]; initialDistance = Math.hypot(t2.pageX-t1.pageX, t2.pageY-t1.pageY); }
+                                if (e.touches.length === 2) {
+                                    e.preventDefault();
+                                    const t1 = e.touches[0];
+                                    const t2 = e.touches[1];
+                                    initialDistance = Math.hypot(t2.pageX - t1.pageX, t2.pageY - t1.pageY);
+                                }
                             });
                             imageElement.addEventListener('touchmove', function(e) {
-                                if (e.touches.length === 2) { e.preventDefault(); const t1=e.touches[0], t2=e.touches[1]; const dist = Math.hypot(t2.pageX-t1.pageX, t2.pageY-t1.pageY); cropper.scale(currentScale + (dist-initialDistance)*0.01, currentScale + (dist-initialDistance)*0.01); } // Note: This simple pinch-zoom might need refinement
+                                if (e.touches.length === 2) {
+                                    e.preventDefault();
+                                    const t1 = e.touches[0];
+                                    const t2 = e.touches[1];
+                                    const dist = Math.hypot(t2.pageX - t1.pageX, t2.pageY - t1.pageY);
+                                    cropper.scale(currentScale + (dist - initialDistance) * 0.01, currentScale + (dist - initialDistance) * 0.01);
+                                }
                             });
                         }
                     }
@@ -1541,231 +1844,414 @@
             };
         }
         
-        function hideCropModal() { cropModal.style.display = 'none'; if (cropper) { cropper.destroy(); cropper = null; } }
+        function hideCropModal() {
+            cropModal.style.display = 'none';
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+        
         closeCropModal.addEventListener('click', hideCropModal);
-        cancelCrop.addEventListener('click', () => { hideCropModal(); imageUpload.value = ''; });
+        
+        cancelCrop.addEventListener('click', () => {
+            hideCropModal();
+            imageUpload.value = '';
+        });
         
         applyCrop.addEventListener('click', () => {
             if (!cropper) return;
             const croppedCanvas = cropper.getCroppedCanvas({ width: 800, height: 800 });
-            const circularCanvas = document.createElement('canvas'); circularCanvas.width=800; circularCanvas.height=800;
-            const cCtx = circularCanvas.getContext('2d'); cCtx.beginPath(); cCtx.arc(400, 400, 400, 0, 2*Math.PI); cCtx.closePath(); cCtx.clip(); cCtx.drawImage(croppedCanvas, 0, 0, 800, 800);
+            const circularCanvas = document.createElement('canvas');
+            circularCanvas.width = 800;
+            circularCanvas.height = 800;
+            const cCtx = circularCanvas.getContext('2d');
+            cCtx.beginPath();
+            cCtx.arc(400, 400, 400, 0, 2 * Math.PI);
+            cCtx.closePath();
+            cCtx.clip();
+            cCtx.drawImage(croppedCanvas, 0, 0, 800, 800);
             const croppedImageData = circularCanvas.toDataURL('image/png');
-            hideCropModal(); processSquareImage(croppedImageData);
+            hideCropModal();
+            processSquareImage(croppedImageData);
         });
         
-        cropAgainBtn.addEventListener('click', () => { if (originalImageData) showCropModal(originalImageData); });
+        cropAgainBtn.addEventListener('click', () => {
+            if (originalImageData) showCropModal(originalImageData);
+        });
 
         function processSquareImage(imageData) {
-    currentImageData = imageData; 
-    sourceImageData = imageData; 
-    const img = new Image();
-    img.onload = () => {
-        sourceCanvas.width=800; 
-        sourceCanvas.height=800; 
-        sourceCtx.clearRect(0,0,800,800); 
-        sourceCtx.drawImage(img, 0, 0, 800, 800);
-        generateBtn.disabled = false; 
-        downloadTemplateBtn.disabled = true; 
-        cancelBtn.disabled = false; 
-        cropAgainBtn.disabled = false;
+            currentImageData = imageData; 
+            sourceImageData = imageData; 
+            const img = new Image();
+            img.onload = () => {
+                sourceCanvas.width = 800; 
+                sourceCanvas.height = 800; 
+                sourceCtx.clearRect(0, 0, 800, 800); 
+                sourceCtx.drawImage(img, 0, 0, 800, 800);
+                generateBtn.disabled = false; 
+                downloadTemplateBtn.disabled = true; 
+                cancelBtn.disabled = false; 
+                cropAgainBtn.disabled = false;
+                
+                status.textContent = '⚙️ Sending to GPU for preprocessing...';
+                
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                document.querySelector('[data-tab="source"]').classList.add('active'); 
+                document.getElementById('sourceTab').classList.add('active');
+                
+                const params = {
+                    num_nails: parseInt(document.getElementById('numNails').value),
+                    num_strings: parseInt(document.getElementById('numStrings').value),
+                    image_resolution: parseInt(document.getElementById('imageResolution').value),
+                    circle_radius_cm: parseFloat(document.getElementById('circleRadius').value),
+                    thread_thickness_mm: parseFloat(document.getElementById('threadThickness').value)
+                };
+                
+                console.log('📤 Sending preprocessing request with params:', params);
+                
+                socket.emit('preprocess_image', {
+                    imageData: imageData,
+                    params: params
+                });
+                
+                saveState();
+            };
+            img.src = imageData;
+        }
         
-        status.textContent = '⚙️ Sending to GPU for preprocessing...';
-        
-        tabButtons.forEach(btn=>btn.classList.remove('active')); 
-        tabContents.forEach(c=>c.classList.remove('active'));
-        document.querySelector('[data-tab="source"]').classList.add('active'); 
-        document.getElementById('sourceTab').classList.add('active');
-        
-        const params = {
-            num_nails: parseInt(document.getElementById('numNails').value),
-            num_strings: parseInt(document.getElementById('numStrings').value),
-            image_resolution: parseInt(document.getElementById('imageResolution').value),
-            circle_radius_cm: parseFloat(document.getElementById('circleRadius').value),
-            thread_thickness_mm: parseFloat(document.getElementById('threadThickness').value)
-        };
-        
-        console.log('📤 Sending preprocessing request with params:', params);
-        
-        socket.emit('preprocess_image', {
-            imageData: imageData,
-            params: params
+        // ====================================================================
+        // Download Template Button
+        // ====================================================================
+        downloadTemplateBtn.addEventListener('click', () => {
+            const url = `/download_template/${numNails}/${circleRadius}`;
+            window.open(url, '_blank');
         });
         
-        saveState();
-    };  // ← This closes img.onload
-    img.src = imageData;
-}
-        
-        downloadTemplateBtn.addEventListener('click', () => { const url = `/download_template/${numNails}/${circleRadius}`; window.open(url, '_blank'); });
-        
+        // ====================================================================
+        // Generate Button
+        // ====================================================================
         generateBtn.addEventListener('click', () => {
-            if (!currentImageData) { alert('Please upload an image first!'); return; }
-            tabButtons.forEach(btn=>btn.classList.remove('active')); tabContents.forEach(c=>c.classList.remove('active'));
-            document.querySelector('[data-tab="final"]').classList.add('active'); document.getElementById('finalTab').classList.add('active');
+            if (!currentImageData) {
+                alert('Please upload an image first!');
+                return;
+            }
+            
+            // Switch to final tab
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="final"]').classList.add('active');
+            document.getElementById('finalTab').classList.add('active');
+            
             clearState(); 
-            numNails = parseInt(document.getElementById('numNails').value); circleRadius = parseFloat(document.getElementById('circleRadius').value);
-            const numStringsVal = parseInt(document.getElementById('numStrings').value); const threadThicknessVal = parseFloat(document.getElementById('threadThickness').value); const imageResolutionVal = parseInt(document.getElementById('imageResolution').value);
-            ctx.clearRect(0, 0, canvas.width, canvas.height); drawCircle(numNails); 
-            sequenceDisplay.innerHTML=''; pinSequence=[]; voiceIndex=0; voicePlaying=false; voicePaused=false; shouldStop=false;
-            voicePlay.disabled=true; voicePause.disabled=true; voiceStop.disabled=true; prevBtn.disabled=true; nextBtn.disabled=true;
-            isGenerating=true; hasValidCanvasData = false; 
-            speechMode.options[0].text='Connections...'; speechMode.options[1].text='Numbers Only...';
-            generateBtn.disabled=true; cancelBtn.disabled=false; progressContainer.style.display='block';
-            progressBar.style.width='0%'; progressBar.textContent='0%'; status.textContent='🚀 Starting generation...'; infoBox.style.display='none';
+            
+            numNails = parseInt(document.getElementById('numNails').value);
+            circleRadius = parseFloat(document.getElementById('circleRadius').value);
+            const numStringsVal = parseInt(document.getElementById('numStrings').value);
+            const threadThicknessVal = parseFloat(document.getElementById('threadThickness').value);
+            const imageResolutionVal = parseInt(document.getElementById('imageResolution').value);
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCircle(numNails); 
+            
+            sequenceDisplay.innerHTML = '';
+            pinSequence = [];
+            voiceIndex = 0;
+            voicePlaying = false;
+            voicePaused = false;
+            shouldStop = false;
+            
+            voicePlay.disabled = true;
+            voicePause.disabled = true;
+            voiceStop.disabled = true;
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+            
+            isGenerating = true;
+            cancelRequested = false;
+            hasValidCanvasData = false; 
+            
+            speechMode.options[0].text = 'Connections...';
+            speechMode.options[1].text = 'Numbers Only...';
+            
+            generateBtn.disabled = true;
+            cancelBtn.disabled = false;
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            status.textContent = '🚀 Starting generation...';
+            infoBox.style.display = 'none';
+            
             socket.emit('start_generation', {
                 imageData: currentImageData,
-                params: { num_nails: numNails, num_strings: numStringsVal, circle_radius_cm: circleRadius, thread_thickness_mm: threadThicknessVal, image_resolution: imageResolutionVal }
+                params: {
+                    num_nails: numNails,
+                    num_strings: numStringsVal,
+                    circle_radius_cm: circleRadius,
+                    thread_thickness_mm: threadThicknessVal,
+                    image_resolution: imageResolutionVal
+                }
             });
         });
         
+        // ====================================================================
+        // Cancel Button - FIXED
+        // ====================================================================
         cancelBtn.addEventListener('click', async () => {
-            if (isGenerating) { socket.emit('cancel_generation'); status.textContent = '🛑 Cancelling...'; cancelBtn.disabled = true; } 
-            else {
-                if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; console.log("Animation cancelled."); } // Stop animation
-                if (voicePlaying || voicePaused) { shouldStop = true; voicePlaying = false; voicePaused = false; stopCurrentAudio(); await new Promise(r => setTimeout(r, 100)); }
-                clearState(); // Clear saved state *after* stopping everything
-                ctx.clearRect(0,0,800,800); sourceCtx.clearRect(0,0,800,800); sequenceCtx.clearRect(0,0,800,800);
-                hasValidCanvasData = false; sequenceDisplay.innerHTML=''; pinSequence=[]; voiceIndex=0;
-                currentImageData=null; sourceImageData=null; originalImageData=null; imageUpload.value='';
-                generateBtn.disabled=true; cancelBtn.disabled=true; downloadTemplateBtn.disabled=true; cropAgainBtn.disabled=true;
-                voicePlay.disabled=true; voicePause.disabled=true; voiceStop.disabled=true; prevBtn.disabled=true; nextBtn.disabled=true;
-                progressContainer.style.display='none'; infoBox.style.display='none'; currentStep.textContent='Ready'; sequenceCounter.innerHTML='-';
-                status.textContent='Upload an image to begin';
-                tabButtons.forEach(btn=>btn.classList.remove('active')); tabContents.forEach(c=>c.classList.remove('active'));
-                document.querySelector('[data-tab="final"]').classList.add('active'); document.getElementById('finalTab').classList.add('active');
-                restoreBtn.style.display = 'block'; // Show restore button after clearing
-                drawCircle(parseInt(document.getElementById('numNails').value)); // Draw default circle
+            if (isGenerating) {
+                // During generation - request cancellation from server
+                console.log('🛑 Requesting generation cancellation...');
+                cancelRequested = true;
+                socket.emit('cancel_generation');
+                status.textContent = '🛑 Cancelling generation...';
+                cancelBtn.disabled = true;
+            } else {
+                // Not generating - this is the "Clear All" functionality
+                console.log('🗑️ Clearing all data...');
+                
+                // Stop any animations or audio
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                    console.log("Animation cancelled.");
+                }
+                
+                if (voicePlaying || voicePaused) {
+                    shouldStop = true;
+                    voicePlaying = false;
+                    voicePaused = false;
+                    stopCurrentAudio();
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                
+                clearState();
+                
+                // Clear all canvases
+                ctx.clearRect(0, 0, 800, 800);
+                sourceCtx.clearRect(0, 0, 800, 800);
+                sequenceCtx.clearRect(0, 0, 800, 800);
+                
+                // Reset all state
+                hasValidCanvasData = false;
+                sequenceDisplay.innerHTML = '';
+                pinSequence = [];
+                voiceIndex = 0;
+                currentImageData = null;
+                sourceImageData = null;
+                originalImageData = null;
+                imageUpload.value = '';
+                fileIndicator.style.display = 'none';
+                
+                // Disable all buttons
+                generateBtn.disabled = true;
+                cancelBtn.disabled = true;
+                downloadTemplateBtn.disabled = true;
+                cropAgainBtn.disabled = true;
+                voicePlay.disabled = true;
+                voicePause.disabled = true;
+                voiceStop.disabled = true;
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                
+                // Reset display
+                progressContainer.style.display = 'none';
+                infoBox.style.display = 'none';
+                currentStep.textContent = 'Ready';
+                sequenceCounter.innerHTML = '-';
+                status.textContent = 'Upload an image to begin';
+                
+                // Switch to final tab
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                document.querySelector('[data-tab="final"]').classList.add('active');
+                document.getElementById('finalTab').classList.add('active');
+                
+                // Show restore button
+                restoreBtn.style.display = 'block';
+                
+                // Draw default circle
+                drawCircle(parseInt(document.getElementById('numNails').value));
             }
         });
         
+        // ====================================================================
+        // Restore Button - FIXED
+        // ====================================================================
         restoreBtn.addEventListener('click', () => {
-    console.log('🔄 Restore button clicked');
-    
-    const savedState = localStorage.getItem('stringArtState');
-    if (!savedState) {
-        alert('No saved state found!');
-        console.log('❌ No saved state in localStorage');
-        return;
-    }
-    
-    // Restore the state
-    const success = restoreState();
-    
-    if (success) {
-        status.textContent = '✅ Previous session restored!';
-    } else {
-        status.textContent = '❌ Failed to restore session';
-    }
-});
+            console.log('🔄 Restore button clicked');
+            
+            const savedState = localStorage.getItem('stringArtState');
+            if (!savedState) {
+                alert('No saved state found!');
+                console.log('❌ No saved state in localStorage');
+                return;
+            }
+            
+            const success = restoreState();
+            
+            if (success) {
+                status.textContent = '✅ Previous session restored!';
+                restoreBtn.style.display = 'none';
+            } else {
+                status.textContent = '❌ Failed to restore session';
+            }
+        });
         
-        // --- Drawing Functions ---
+        // ====================================================================
+        // Drawing Functions
+        // ====================================================================
         function getDrawPosition(nailIndex, totalNails) { 
-            const centerX=400, centerY=400, radius=390; 
+            const centerX = 400;
+            const centerY = 400;
+            const radius = 390; 
             const angle = (nailIndex / totalNails) * 2 * Math.PI;
-            return { x: centerX + radius * Math.cos(angle), y: centerY + radius * Math.sin(angle) };
+            return {
+                x: centerX + radius * Math.cos(angle),
+                y: centerY + radius * Math.sin(angle)
+            };
         }
         
         function drawCircle(nailsToDraw) { 
-            const centerX=400, centerY=400, radius=390; 
-            ctx.strokeStyle = '#ddd'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(centerX,centerY,radius,0,2*Math.PI); ctx.stroke();
+            const centerX = 400;
+            const centerY = 400;
+            const radius = 390; 
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.stroke();
             ctx.fillStyle = '#666';
             for (let i = 0; i < nailsToDraw; i++) { 
                 const angle = (i / nailsToDraw) * 2 * Math.PI; 
-                const x = centerX + radius * Math.cos(angle); const y = centerY + radius * Math.sin(angle);
-                ctx.beginPath(); ctx.arc(x, y, 2, 0, 2 * Math.PI); ctx.fill();
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                ctx.fill();
             }
         }
         
-        // --- Animation Function ---
+        // ====================================================================
+        // Animation Function
+        // ====================================================================
         function animateDrawing(sequence, currentNumNails) {
             console.log(`Starting animation with ${sequence.length} points and ${currentNumNails} nails...`);
-            if (animationFrameId) cancelAnimationFrame(animationFrameId); // Stop previous
-            ctx.clearRect(0, 0, canvas.width, canvas.height); drawCircle(currentNumNails); 
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'; ctx.lineWidth = 1;
-            let i = 0; const linesPerFrame = 10; 
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCircle(currentNumNails); 
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.lineWidth = 1;
+            
+            let i = 0;
+            const linesPerFrame = 10; 
+            
             function drawStep() {
                 const end = Math.min(i + linesPerFrame, sequence.length - 1);
                 for (; i < end; i++) {
-                    const startNail = sequence[i] - 1; const endNail = sequence[i + 1] - 1;
+                    const startNail = sequence[i] - 1;
+                    const endNail = sequence[i + 1] - 1;
                     if (startNail < 0 || startNail >= currentNumNails || endNail < 0 || endNail >= currentNumNails) {
-                        console.error(`Invalid nail index at step ${i}: ${startNail+1} -> ${endNail+1}. Max nails: ${currentNumNails}`); continue; 
+                        console.error(`Invalid nail index at step ${i}: ${startNail+1} -> ${endNail+1}. Max nails: ${currentNumNails}`);
+                        continue; 
                     }
-                    const startPos = getDrawPosition(startNail, currentNumNails); const endPos = getDrawPosition(endNail, currentNumNails);
-                    ctx.beginPath(); ctx.moveTo(startPos.x, startPos.y); ctx.lineTo(endPos.x, endPos.y); ctx.stroke();
+                    const startPos = getDrawPosition(startNail, currentNumNails);
+                    const endPos = getDrawPosition(endNail, currentNumNails);
+                    ctx.beginPath();
+                    ctx.moveTo(startPos.x, startPos.y);
+                    ctx.lineTo(endPos.x, endPos.y);
+                    ctx.stroke();
                 }
                 const progress = Math.min(100, (i / (sequence.length - 1)) * 100);
                 status.textContent = `Animating... ${Math.round(progress)}%`;
-                if (i < sequence.length - 1) animationFrameId = requestAnimationFrame(drawStep); 
-                else {
-                    console.log('✅ Animation complete.'); status.textContent = '✅ Pattern complete!';
-                    hasValidCanvasData = true; saveState(); animationFrameId = null;
+                
+                if (i < sequence.length - 1) {
+                    animationFrameId = requestAnimationFrame(drawStep); 
+                } else {
+                    console.log('✅ Animation complete.');
+                    status.textContent = '✅ Pattern complete!';
+                    hasValidCanvasData = true;
+                    saveState();
+                    animationFrameId = null;
                 }
             }
             animationFrameId = requestAnimationFrame(drawStep);
         }
 
-        // --- Socket Event Handlers ---
+        // ====================================================================
+        // Socket Event Handlers
+        // ====================================================================
         socket.on('status', (data) => {
             status.textContent = data.msg;
             if (data.msg.includes('cancelled') || data.msg.includes('Cancelled') || data.msg.includes('Error')) {
-                isGenerating = false; generateBtn.disabled = !!currentImageData; cancelBtn.disabled = true; progressContainer.style.display = 'none';
-                if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; } // Stop animation on error too
+                isGenerating = false;
+                generateBtn.disabled = !!currentImageData ? false : true;
+                cancelBtn.disabled = true;
+                progressContainer.style.display = 'none';
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
             }
         });
-        socket.on('progress', (data) => { progressBar.style.width = data.percent + '%'; progressBar.textContent = Math.round(data.percent) + '%'; });
+        
+        socket.on('progress', (data) => {
+            progressBar.style.width = data.percent + '%';
+            progressBar.textContent = Math.round(data.percent) + '%';
+        });
         
         socket.on('final_sequence', (data) => {
-    if (data.status !== 'success') {
-        console.error("Received non-success status:", data); 
-        status.textContent = `❌ GPU Error: ${data.message || 'Unknown error'}`;
-        isGenerating = false; 
-        generateBtn.disabled = false;  // ✅ FIXED: Enable button even on error
-        cancelBtn.disabled = true; 
-        progressContainer.style.display = 'none'; 
-        return; 
-    }
-    
-    isGenerating = false; 
-    generateBtn.disabled = false;  // ✅ FIXED: Enable button after success
-    cancelBtn.disabled = false; 
-    downloadTemplateBtn.disabled = false; 
-    hasValidCanvasData = false; 
-    
-    pinSequence = data.sequence; 
-    const physicalInfo = data.physical_info; 
-    numNails = physicalInfo.num_nails; 
-    circleRadius = physicalInfo.radius_cm;
-    
-    document.getElementById('numNails').value = numNails; 
-    document.getElementById('numNailsValue').textContent = numNails;
-    document.getElementById('circleRadius').value = circleRadius; 
-    document.getElementById('circleRadiusValue').textContent = circleRadius;
-    voiceIndex = 0; 
-    
-    animateDrawing(pinSequence, numNails); 
-    
-    renderSequence(); 
-    updateSpeechModeExamples(); 
-    updateSequenceNavigation(); 
-    
-    voicePlay.disabled = false; 
-    voiceStop.disabled = false; 
-    prevBtn.disabled = true; 
-    nextBtn.disabled = pinSequence.length <= 1;
-    currentStep.textContent = 'Ready to play';
-    
-    document.getElementById('stringLength').textContent = `${physicalInfo.total_length_m.toFixed(2)} m (approx ${(physicalInfo.total_length_m * 3.28084).toFixed(1)} ft)`;
-    document.getElementById('linesGenerated').textContent = physicalInfo.num_lines;
-    infoBox.style.display = 'block'; 
-});
+            if (data.status !== 'success') {
+                console.error("Received non-success status:", data); 
+                status.textContent = `❌ GPU Error: ${data.message || 'Unknown error'}`;
+                isGenerating = false; 
+                generateBtn.disabled = false;
+                cancelBtn.disabled = true; 
+                progressContainer.style.display = 'none'; 
+                return; 
+            }
+            
+            isGenerating = false; 
+            generateBtn.disabled = false;
+            cancelBtn.disabled = false; 
+            downloadTemplateBtn.disabled = false; 
+            hasValidCanvasData = false; 
+            
+            pinSequence = data.sequence; 
+            const physicalInfo = data.physical_info; 
+            numNails = physicalInfo.num_nails; 
+            circleRadius = physicalInfo.radius_cm;
+            
+            document.getElementById('numNails').value = numNails; 
+            document.getElementById('numNailsValue').textContent = numNails;
+            document.getElementById('circleRadius').value = circleRadius; 
+            document.getElementById('circleRadiusValue').textContent = circleRadius;
+            voiceIndex = 0; 
+            
+            animateDrawing(pinSequence, numNails); 
+            
+            renderSequence(); 
+            updateSpeechModeExamples(); 
+            updateSequenceNavigation(); 
+            
+            voicePlay.disabled = false; 
+            voiceStop.disabled = false; 
+            prevBtn.disabled = true; 
+            nextBtn.disabled = pinSequence.length <= 1;
+            currentStep.textContent = 'Ready to play';
+            
+            document.getElementById('stringLength').textContent = `${physicalInfo.total_length_m.toFixed(2)} m (approx ${(physicalInfo.total_length_m * 3.28084).toFixed(1)} ft)`;
+            document.getElementById('linesGenerated').textContent = physicalInfo.num_lines;
+            infoBox.style.display = 'block'; 
+        });
         
-        socket.on('generation_stopped', () => { isGenerating=false; generateBtn.disabled=!!currentImageData; cancelBtn.disabled=true; progressContainer.style.display='none'; });
-        socket.on('connect', () => { console.log('✅ Connected to server'); });
-        socket.on('disconnect', () => { console.log('❌ Disconnected from server'); });
-
-        // Initial draw
-        if (!localStorage.getItem('stringArtState')) { drawCircle(numNails); }
+        socket.on('generation_stopped', () => {
+            isGenerating = false;
+            generateBtn.disabled = !!currentImageData ? false : true;
+            cancelBtn.disabled = true;
+            progressContainer.style.display = 'none';
+        });
     </script>
 </body>
 </html>
