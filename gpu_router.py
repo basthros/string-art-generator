@@ -8,10 +8,14 @@ NEW in this version:
 """
 
 import requests
+import urllib3
 import logging
 import json
 from typing import Optional, Dict, Any, Tuple, Callable
 from datetime import datetime, timedelta
+
+# Suppress SSL warnings for temporary tunnels (trycloudflare.com, Tailscale)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -69,12 +73,15 @@ class GPURouter:
             return False
             
         try:
-            # Don't verify SSL for Tailscale Funnel (self-signed certs)
-            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            # Don't verify SSL for Tailscale Funnel or Cloudflare Tunnel (self-signed/temp certs)
+            verify_ssl = not (
+                self.home_gpu_url.endswith('.ts.net') or 
+                'trycloudflare.com' in self.home_gpu_url
+            )
             
             response = requests.get(
                 f"{self.home_gpu_url}/health",
-                timeout=3,
+                timeout=5,  # Increased from 3 to 5 seconds
                 verify=verify_ssl
             )
             
@@ -132,8 +139,11 @@ class GPURouter:
         logger.info("📤 Preprocessing on Home GPU")
         
         try:
-            # Don't verify SSL for Tailscale Funnel
-            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            # Don't verify SSL for Tailscale Funnel or Cloudflare Tunnel
+            verify_ssl = not (
+                self.home_gpu_url.endswith('.ts.net') or 
+                'trycloudflare.com' in self.home_gpu_url
+            )
             
             response = requests.post(
                 f"{self.home_gpu_url}/preprocess",
@@ -234,8 +244,11 @@ class GPURouter:
         logger.info("📤 Streaming generation from Home GPU")
         
         try:
-            # Don't verify SSL for Tailscale Funnel
-            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            # Don't verify SSL for Tailscale Funnel or Cloudflare Tunnel
+            verify_ssl = not (
+                self.home_gpu_url.endswith('.ts.net') or 
+                'trycloudflare.com' in self.home_gpu_url
+            )
             
             response = requests.post(
                 f"{self.home_gpu_url}/generate_stream",
@@ -313,8 +326,11 @@ class GPURouter:
         logger.info("📤 Generating on Home GPU (legacy)")
         
         try:
-            # Don't verify SSL for Tailscale Funnel
-            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            # Don't verify SSL for Tailscale Funnel or Cloudflare Tunnel
+            verify_ssl = not (
+                self.home_gpu_url.endswith('.ts.net') or 
+                'trycloudflare.com' in self.home_gpu_url
+            )
             
             response = requests.post(
                 f"{self.home_gpu_url}/generate",
