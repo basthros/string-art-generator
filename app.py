@@ -32,6 +32,14 @@ gpu_router = GPURouter(
     runpod_api_key=RUNPOD_API_KEY
 )
 
+# DEBUG: Print configuration (this WILL show in gunicorn logs)
+print(f"DEBUG: HOME_GPU_URL = {HOME_GPU_URL}")
+print(f"DEBUG: GPU Router initialized")
+if HOME_GPU_URL:
+    health = gpu_router.check_home_gpu_health()
+    print(f"DEBUG: Home GPU health check result = {health}")
+else:
+    print(f"DEBUG: HOME_GPU_URL is not set!")
 
 @app.route('/')
 def index():
