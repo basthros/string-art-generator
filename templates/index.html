@@ -1231,7 +1231,14 @@
             let canvasDataToSave = preservedCanvasData;
             if (hasValidCanvasData && pinSequence.length > 0 && !animationFrameId) { 
                 canvasDataToSave = canvas.toDataURL();
-            } 
+                console.log('💾 Saving fresh canvas data');
+            } else {
+                console.log('💾 Preserving existing canvas data or no data to save', {
+                    hasValidCanvasData,
+                    sequenceLength: pinSequence.length,
+                    animationFrameId: !!animationFrameId
+                });
+            }
             
             // Get active tab
             const activeTabButton = document.querySelector('.tab-button.active');
@@ -1251,7 +1258,7 @@
             };
             
             localStorage.setItem('stringArtState', JSON.stringify(state));
-            console.log('💾 State saved with active tab:', activeTab);
+            console.log('💾 State saved with active tab:', activeTab, 'Has canvas:', !!canvasDataToSave);
         }
         
         function restoreState() {
@@ -1340,11 +1347,14 @@
                         sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
                         console.log('✅ Source canvas restored');
                         
-                        // Show file indicator
+                        // Show file indicator and restore currentImageData
                         fileIndicator.style.display = 'block';
                         currentImageData = sourceImageData;
                     };
                     img.src = sourceImageData;
+                } else {
+                    // No source image, hide indicator
+                    fileIndicator.style.display = 'none';
                 }
                 
                 // Restore sequence and UI state
@@ -1944,7 +1954,8 @@
             document.querySelector('[data-tab="final"]').classList.add('active');
             document.getElementById('finalTab').classList.add('active');
             
-            clearState(); 
+            // Don't clear state yet - keep old state in case generation fails
+            // clearState();  // REMOVED
             
             numNails = parseInt(document.getElementById('numNails').value);
             circleRadius = parseFloat(document.getElementById('circleRadius').value);
@@ -2025,7 +2036,8 @@
                     await new Promise(r => setTimeout(r, 100));
                 }
                 
-                clearState();
+                // DON'T call clearState() - preserve localStorage for Restore function
+                // clearState();  // REMOVED - this was deleting the ability to restore
                 
                 // Clear all canvases
                 ctx.clearRect(0, 0, 800, 800);
@@ -2172,8 +2184,8 @@
                     console.log('✅ Animation complete.');
                     status.textContent = '✅ Pattern complete!';
                     hasValidCanvasData = true;
+                    animationFrameId = null;  // Clear BEFORE saving so canvas data gets saved
                     saveState();
-                    animationFrameId = null;
                 }
             }
             animationFrameId = requestAnimationFrame(drawStep);
