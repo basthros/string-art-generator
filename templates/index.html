@@ -2212,6 +2212,31 @@
             progressBar.style.width = data.percent + '%';
             progressBar.textContent = Math.round(data.percent) + '%';
         });
+
+        // NEW: Real-time line drawing for home GPU
+        socket.on('new_line', (data) => {
+            // Only draw if we're currently generating (before final_sequence arrives)
+            if (isGenerating && pinSequence.length === 0) {
+                // Draw line immediately
+                const startNail = data.start;
+                const endNail = data.end;
+        
+                if (startNail >= 0 && startNail < numNails && endNail >= 0 && endNail < numNails) {
+                    const startPos = getDrawPosition(startNail, numNails);
+                    const endPos = getDrawPosition(endNail, numNails);
+            
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(startPos.x, startPos.y);
+                    ctx.lineTo(endPos.x, endPos.y);
+                    ctx.stroke();
+                }
+        
+                // Store for final sequence (temporary, will be replaced by final_sequence)
+                // This is just for real-time preview
+            }
+        });
         
         socket.on('final_sequence', (data) => {
             if (data.status !== 'success') {

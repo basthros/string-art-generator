@@ -228,7 +228,7 @@ def handle_cancel():
 @socketio.on('start_generation')
 def handle_start_generation(data):
     """
-    🚀 OPTIMIZED: Generation using GPU router (tries home GPU first, falls back to RunPod)
+    🚀 OPTIMIZED: Generation with REAL-TIME STREAMING from home GPU
     """
     sid = request.sid
     print(f"🚀 Generation request from {sid[:8]}...")
@@ -242,13 +242,41 @@ def handle_start_generation(data):
     try:
         submit_start = time.time()
         
-        # Use GPU router - tries home GPU first, then RunPod
-        result, provider = gpu_router.generate(
+        # Callback function to handle events from home GPU stream
+        def on_stream_event(event_data):
+            """Called for each event from home GPU SSE stream"""
+            event_type = event_data.get("type")
+            
+            if event_type == "new_line":
+                # 🎨 Real-time line update!
+                socketio.emit('new_line', {
+                    'start': event_data['start'],
+                    'end': event_data['end']
+                }, to=sid)
+                
+            elif event_type == "progress":
+                # Progress update
+                socketio.emit('progress', {
+                    'percent': event_data.get('percent', 0)
+                }, to=sid)
+                socketio.emit('status', {
+                    'msg': f"⚙️ Generating... {event_data['current']}/{event_data['total']} lines"
+                }, to=sid)
+                
+            elif event_type == "error":
+                # Error during generation
+                socketio.emit('status', {
+                    'msg': f"❌ Error: {event_data.get('message', 'Unknown error')}"
+                }, to=sid)
+        
+        # Use GPU router with streaming support
+        result, provider = gpu_router.generate_stream(
             image_data=data['imageData'],
-            params=data['params']
+            params=data['params'],
+            on_event=on_stream_event
         )
         
-        # If home GPU was used (synchronous), we're done!
+        # If home GPU was used (with streaming), we're done!
         if provider == "home":
             total_time = time.time() - submit_start
             print(f"✅ Home GPU generation complete in {total_time:.1f}s!")
@@ -262,7 +290,7 @@ def handle_start_generation(data):
             socketio.emit('final_sequence', result, to=sid)
             return
         
-        # RunPod path - need to poll
+        # RunPod path - need to poll (same as before)
         if "id" not in result:
             print(f"❌ RunPod submission error: {result}")
             socketio.emit('status', {
@@ -281,7 +309,7 @@ def handle_start_generation(data):
         socketio.emit('status', {'msg': f'❌ Error: {e}'}, to=sid)
         return
 
-    # Poll RunPod for completion
+    # Poll RunPod for completion (same as before)
     headers = {
         "Authorization": f"Bearer {RUNPOD_API_KEY}",
         "Content-Type": "application/json"

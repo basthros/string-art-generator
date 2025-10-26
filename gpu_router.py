@@ -1,13 +1,16 @@
 """
-GPU Router for Flask + SocketIO
+GPU Router for Flask + SocketIO with Real-Time Streaming
 Routes requests between Home GPU and RunPod with automatic failover
 
-This is a simple router that tries Home GPU first, falls back to RunPod
+NEW in this version:
+- Supports SSE streaming from home GPU for real-time animation
+- Relays new_line events to frontend during generation
 """
 
 import requests
 import logging
-from typing import Optional, Dict, Any, Tuple
+import json
+from typing import Optional, Dict, Any, Tuple, Callable
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -22,7 +25,7 @@ class GPURouter:
         timeout: int = 10
     ):
         """
-        Initialize GPU Router for Flask/SocketIO
+        Initialize GPU Router for Flask/SocketIO with streaming support
         
         Args:
             home_gpu_url: URL to home GPU (e.g., http://100.64.1.2:8001) or None to disable
@@ -187,9 +190,106 @@ class GPURouter:
         
         return response.json(), "runpod"
     
+    def generate_stream(
+        self, 
+        image_data: str, 
+        params: Dict[str, Any],
+        on_event: Callable[[Dict[str, Any]], None]
+    ) -> Tuple[Optional[Dict[str, Any]], str]:
+        """
+        Generate string art with streaming - tries Home GPU, falls back to RunPod
+        
+        Args:
+            image_data: Base64 encoded image
+            params: Generation parameters
+            on_event: Callback function called for each event (progress, new_line, etc.)
+        
+        Returns:
+            Tuple of (final_result_dict, provider) where provider is "home" or "runpod"
+        """
+        self.stats["total_requests"] += 1
+        
+        # Try home GPU first (with streaming!)
+        if self.home_gpu_url and self.check_home_gpu_health():
+            try:
+                return self._generate_stream_on_home(image_data, params, on_event)
+            except Exception as e:
+                logger.warning(f"⚠️ Home GPU streaming failed, trying RunPod: {e}")
+                self.home_gpu_available = False
+        
+        # Fall back to RunPod (returns job ID for polling)
+        return self._generate_on_runpod(image_data, params)
+    
+    def _generate_stream_on_home(
+        self, 
+        image_data: str, 
+        params: Dict[str, Any],
+        on_event: Callable[[Dict[str, Any]], None]
+    ) -> Tuple[Dict[str, Any], str]:
+        """
+        Generate on home GPU with SSE streaming
+        Calls on_event callback for each event received
+        """
+        self.stats["home_requests"] += 1
+        logger.info("📤 Streaming generation from Home GPU")
+        
+        try:
+            # Don't verify SSL for Tailscale Funnel
+            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            
+            response = requests.post(
+                f"{self.home_gpu_url}/generate_stream",
+                json={
+                    "imageData": image_data,
+                    "params": params
+                },
+                timeout=120,
+                stream=True,  # Enable streaming
+                verify=verify_ssl
+            )
+            
+            if response.status_code != 200:
+                if response.status_code == 503:
+                    raise Exception("Home GPU is busy")
+                else:
+                    raise Exception(f"Home GPU error: {response.status_code}")
+            
+            # Process SSE stream
+            final_result = None
+            for line in response.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                
+                # SSE format: "data: {json}"
+                if line.startswith("data: "):
+                    try:
+                        event_data = json.loads(line[6:])
+                        event_type = event_data.get("type")
+                        
+                        # Call callback for each event
+                        on_event(event_data)
+                        
+                        # Save final result
+                        if event_type == "final_sequence":
+                            final_result = event_data
+                            
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"Failed to parse SSE event: {e}")
+            
+            if final_result:
+                logger.info(f"✅ Home GPU streaming complete")
+                return final_result, "home"
+            else:
+                raise Exception("No final result received from stream")
+                
+        except Exception as e:
+            self.stats["home_failures"] += 1
+            raise
+    
     def generate(self, image_data: str, params: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
         """
-        Generate string art - tries Home GPU, falls back to RunPod
+        DEPRECATED: Use generate_stream instead for real-time updates
+        Legacy synchronous generation - tries Home GPU, falls back to RunPod
         
         Returns:
             Tuple of (result_dict, provider) where provider is "home" or "runpod"
@@ -199,7 +299,7 @@ class GPURouter:
         # Try home GPU first
         if self.home_gpu_url and self.check_home_gpu_health():
             try:
-                return self._generate_on_home(image_data, params)
+                return self._generate_on_home_legacy(image_data, params)
             except Exception as e:
                 logger.warning(f"⚠️ Home GPU generation failed, trying RunPod: {e}")
                 self.home_gpu_available = False
@@ -207,10 +307,10 @@ class GPURouter:
         # Fall back to RunPod
         return self._generate_on_runpod(image_data, params)
     
-    def _generate_on_home(self, image_data: str, params: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
-        """Generate on home GPU (synchronous)"""
+    def _generate_on_home_legacy(self, image_data: str, params: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+        """Generate on home GPU (synchronous, legacy endpoint)"""
         self.stats["home_requests"] += 1
-        logger.info("📤 Generating on Home GPU")
+        logger.info("📤 Generating on Home GPU (legacy)")
         
         try:
             # Don't verify SSL for Tailscale Funnel
@@ -222,7 +322,7 @@ class GPURouter:
                     "imageData": image_data,
                     "params": params
                 },
-                timeout=120,  # Generation can take longer
+                timeout=120,
                 verify=verify_ssl
             )
             
