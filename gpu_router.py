@@ -66,9 +66,13 @@ class GPURouter:
             return False
             
         try:
+            # Don't verify SSL for Tailscale Funnel (self-signed certs)
+            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            
             response = requests.get(
                 f"{self.home_gpu_url}/health",
-                timeout=3
+                timeout=3,
+                verify=verify_ssl
             )
             
             if response.status_code == 200:
@@ -125,6 +129,9 @@ class GPURouter:
         logger.info("📤 Preprocessing on Home GPU")
         
         try:
+            # Don't verify SSL for Tailscale Funnel
+            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            
             response = requests.post(
                 f"{self.home_gpu_url}/preprocess",
                 json={
@@ -132,7 +139,8 @@ class GPURouter:
                     "num_nails": num_nails,
                     "image_resolution": image_resolution
                 },
-                timeout=30
+                timeout=30,
+                verify=verify_ssl
             )
             
             if response.status_code == 200:
@@ -205,13 +213,17 @@ class GPURouter:
         logger.info("📤 Generating on Home GPU")
         
         try:
+            # Don't verify SSL for Tailscale Funnel
+            verify_ssl = not self.home_gpu_url.endswith('.ts.net')
+            
             response = requests.post(
                 f"{self.home_gpu_url}/generate",
                 json={
                     "imageData": image_data,
                     "params": params
                 },
-                timeout=120  # Generation can take longer
+                timeout=120,  # Generation can take longer
+                verify=verify_ssl
             )
             
             if response.status_code == 200:
