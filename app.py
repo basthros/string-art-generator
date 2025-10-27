@@ -103,12 +103,11 @@ def generate_printable_template(num_nails, radius_cm):
     c.setFont("Helvetica", 11)
     instructions = [
         "1. Print all pages at 100% scale (DO NOT scale to fit)",
-        "2. Cut pages along their edges (full bleed - no margins)",
-        "3. Arrange pages according to the grid below",
-        "4. Tape pages together on the back side",
-        "5. Transfer nail positions to your circular board",
-        "6. Hammer small nails at each marked position",
-        "7. Start at nail #1 and follow your sequence"
+        "2. Arrange pages according to the grid below",
+        "3. Tape pages together on the back side",
+        "4. Transfer nail positions to your circular board",
+        "5. Hammer small nails at each marked position",
+        "6. Follow the numbered sequence to create your string art"
     ]
     
     for instruction in instructions:
@@ -165,16 +164,15 @@ def generate_printable_template(num_nails, radius_cm):
     c.circle(layout_circle_center_x, layout_circle_center_y, layout_circle_radius, stroke=1, fill=0)
     c.setDash()  # Reset dash
     
-    # Draw page grid
+    # Draw page grid - numbering only non-blank pages
     c.setFont("Helvetica", 8)
-    for py in range(pages_y):
+    pdf_page_num = 2  # Start at P2 (P1 is the guide)
+    for reading_row in range(pages_y):
         for px in range(pages_x):
-            # Page numbering: top-left is P1, goes left-to-right, top-to-bottom
-            # py=0 is bottom row, so invert to get reading order
-            reading_row = pages_y - 1 - py
-            page_num = reading_row * pages_x + px + 1
+            # Convert reading position to grid coordinates
+            py = pages_y - 1 - reading_row
+            
             x = grid_start_x + px * cell_width
-            # Draw from top to bottom: use reading_row for y position
             y = grid_start_y + reading_row * cell_height
             
             # Check if this page is blank
@@ -200,12 +198,15 @@ def generate_printable_template(num_nails, radius_cm):
                 c.setLineWidth(1)
                 c.rect(x, y, cell_width, cell_height, stroke=1, fill=0)
                 
-                # Center the page number
+                # Center the page number (actual PDF page number)
                 c.setFillColor(colors.black)
                 c.setFont("Helvetica", 8)
-                text = f"P{page_num}"
+                text = f"P{pdf_page_num}"
                 text_width = c.stringWidth(text, "Helvetica", 8)
                 c.drawString(x + (cell_width - text_width) / 2, y + cell_height / 2 - 2, text)
+                
+                # Increment page number only for non-blank pages
+                pdf_page_num += 1
     
     c.showPage()  # End assembly guide page
     
@@ -213,16 +214,20 @@ def generate_printable_template(num_nails, radius_cm):
     # Generate template pages with nail positions
     # =========================================================================
     # Generate pages in READING ORDER (top to bottom, left to right)
+    pdf_page_num = 2  # Start at P2 (P1 is the guide)
     for reading_row in range(pages_y):
         for page_x in range(pages_x):
             # Convert reading position to grid coordinates
             # reading_row=0 is top row, which is page_y=pages_y-1 in PDF coordinates
             page_y = pages_y - 1 - reading_row
-            page_num = reading_row * pages_x + page_x + 1
             
             # Skip blank pages (pages with no nails)
             if (page_x, page_y) not in pages_with_nails:
                 continue
+            
+            # Use the actual PDF page number
+            page_num = pdf_page_num
+            pdf_page_num += 1  # Increment for next non-blank page
             
             # Calculate this page's portion of the total grid (in inches)
             # No margins - use full page!
