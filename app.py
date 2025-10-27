@@ -169,9 +169,13 @@ def generate_printable_template(num_nails, radius_cm):
     c.setFont("Helvetica", 8)
     for py in range(pages_y):
         for px in range(pages_x):
-            page_num = py * pages_x + px + 2  # +2 because page 1 is this guide
+            # Page numbering: top-left is P1, goes left-to-right, top-to-bottom
+            # py=0 is bottom row, so invert to get reading order
+            reading_row = pages_y - 1 - py
+            page_num = reading_row * pages_x + px + 1
             x = grid_start_x + px * cell_width
-            y = grid_start_y + py * cell_height
+            # Draw from top to bottom: use reading_row for y position
+            y = grid_start_y + reading_row * cell_height
             
             # Check if this page is blank
             is_blank = (px, py) not in pages_with_nails
@@ -208,12 +212,14 @@ def generate_printable_template(num_nails, radius_cm):
     # =========================================================================
     # Generate template pages with nail positions
     # =========================================================================
-    page_num = 2
     for page_y in range(pages_y):
         for page_x in range(pages_x):
+            # Calculate page number in reading order (same as layout)
+            reading_row = pages_y - 1 - page_y
+            page_num = reading_row * pages_x + page_x + 1
+            
             # Skip blank pages (pages with no nails)
             if (page_x, page_y) not in pages_with_nails:
-                page_num += 1
                 continue
             
             # Calculate this page's portion of the total grid (in inches)
@@ -236,6 +242,12 @@ def generate_printable_template(num_nails, radius_cm):
             center_y_on_page = (circle_center_y + offset_y) * inch
             
             c.circle(center_x_on_page, center_y_on_page, radius_inches * inch, stroke=1, fill=0)
+            
+            # Add page number in corner for reference
+            c.setFont("Helvetica", 10)
+            c.setFillColor(colors.grey)
+            c.drawString(10, PAGE_HEIGHT - 20, f"P{page_num}")
+            c.setFillColor(colors.black)
             
             # Draw nails that fall on this page
             c.setFillColor(colors.black)
@@ -278,7 +290,6 @@ def generate_printable_template(num_nails, radius_cm):
                     nails_on_page += 1
             
             c.showPage()  # End this page
-            page_num += 1
     
     # Save PDF
     c.save()
