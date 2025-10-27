@@ -212,10 +212,12 @@ def generate_printable_template(num_nails, radius_cm):
     # =========================================================================
     # Generate template pages with nail positions
     # =========================================================================
-    for page_y in range(pages_y):
+    # Generate pages in READING ORDER (top to bottom, left to right)
+    for reading_row in range(pages_y):
         for page_x in range(pages_x):
-            # Calculate page number in reading order (same as layout)
-            reading_row = pages_y - 1 - page_y
+            # Convert reading position to grid coordinates
+            # reading_row=0 is top row, which is page_y=pages_y-1 in PDF coordinates
+            page_y = pages_y - 1 - reading_row
             page_num = reading_row * pages_x + page_x + 1
             
             # Skip blank pages (pages with no nails)
