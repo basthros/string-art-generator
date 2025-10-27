@@ -762,6 +762,9 @@
                     <div class="canvas-wrapper">
                         <canvas id="stringArtCanvas" width="800" height="800"></canvas>
                     </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-primary" id="replayBtn" disabled style="width: auto; padding: 12px 30px;">🔄 Replay Animation</button>
+                    </div>
                 </div>
                 
                 <div class="tab-content" id="sequenceTab">
@@ -999,6 +1002,9 @@
         const cancelCrop = document.getElementById('cancelCrop');
         const applyCrop = document.getElementById('applyCrop');
         
+        // Replay button
+        const replayBtn = document.getElementById('replayBtn');
+        
         // ====================================================================
         // State Variables
         // ====================================================================
@@ -1031,6 +1037,7 @@
 
         // Animation control
         let animationFrameId = null;
+        let animationAlreadyPlayed = false; // Track if real-time animation happened
 
         // ====================================================================
         // GPU Wake-up Trigger
@@ -1890,6 +1897,13 @@
             if (originalImageData) showCropModal(originalImageData);
         });
 
+        replayBtn.addEventListener('click', () => {
+            if (pinSequence && pinSequence.length > 0) {
+                // Replay the animation
+                animateDrawing(pinSequence, numNails);
+            }
+        });
+
         function processSquareImage(imageData) {
             currentImageData = imageData; 
             sourceImageData = imageData; 
@@ -2217,6 +2231,9 @@
         socket.on('new_line', (data) => {
             // Only draw if we're currently generating (before final_sequence arrives)
             if (isGenerating && pinSequence.length === 0) {
+                // Mark that real-time animation is happening
+                animationAlreadyPlayed = true;
+                
                 // Draw line immediately
                 const startNail = data.start;
                 const endNail = data.end;
@@ -2266,7 +2283,38 @@
             document.getElementById('circleRadiusValue').textContent = circleRadius;
             voiceIndex = 0; 
             
-            animateDrawing(pinSequence, numNails); 
+            // Only animate if it wasn't already drawn in real-time
+            if (!animationAlreadyPlayed) {
+                // RunPod path - animate now
+                animateDrawing(pinSequence, numNails);
+            } else {
+                // Home GPU path - animation already happened in real-time
+                // Just draw the final result immediately
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawCircle(numNails);
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.lineWidth = 1;
+                
+                for (let i = 0; i < pinSequence.length - 1; i++) {
+                    const startNail = pinSequence[i] - 1;
+                    const endNail = pinSequence[i + 1] - 1;
+                    if (startNail < 0 || startNail >= numNails || endNail < 0 || endNail >= numNails) continue;
+                    
+                    const startPos = getDrawPosition(startNail, numNails);
+                    const endPos = getDrawPosition(endNail, numNails);
+                    ctx.beginPath();
+                    ctx.moveTo(startPos.x, startPos.y);
+                    ctx.lineTo(endPos.x, endPos.y);
+                    ctx.stroke();
+                }
+                
+                status.textContent = '✅ Pattern complete!';
+                hasValidCanvasData = true;
+                saveState();
+            }
+            
+            // Reset flag for next generation
+            animationAlreadyPlayed = false; 
             
             renderSequence(); 
             updateSpeechModeExamples(); 
@@ -2274,6 +2322,7 @@
             
             voicePlay.disabled = false; 
             voiceStop.disabled = false; 
+            replayBtn.disabled = false; // Enable replay button
             prevBtn.disabled = true; 
             nextBtn.disabled = pinSequence.length <= 1;
             currentStep.textContent = 'Ready to play';
