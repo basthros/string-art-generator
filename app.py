@@ -521,19 +521,11 @@ def handle_start_generation(data):
             event_type = event_data.get("type")
             
             if event_type == "new_line":
-                # 🎨 Real-time line update (single line)
+                # 🎨 Real-time line update!
                 socketio.emit('new_line', {
                     'start': event_data['start'],
                     'end': event_data['end']
                 }, to=sid)
-            
-            elif event_type == "new_lines_batch":
-                # 🎨 Batch of lines (for better network performance)
-                for line in event_data.get('lines', []):
-                    socketio.emit('new_line', {
-                        'start': line['start'],
-                        'end': line['end']
-                    }, to=sid)
                 
             elif event_type == "progress":
                 # Progress update
