@@ -61,17 +61,21 @@ def generate_printable_template(num_nails, radius_cm):
     # Letter paper dimensions
     PAGE_WIDTH = 8.5 * inch
     PAGE_HEIGHT = 11 * inch
-    MARGIN = 0.5 * inch
-    USABLE_WIDTH = PAGE_WIDTH - 2 * MARGIN
-    USABLE_HEIGHT = PAGE_HEIGHT - 2 * MARGIN
+    INSTRUCTION_MARGIN = 0.5 * inch  # Only for instruction page
     
     # Convert radius to inches for PDF
     radius_inches = radius_cm / 2.54
     diameter_inches = radius_inches * 2
     
-    # Calculate how many pages needed (grid)
-    pages_x = int(math.ceil(diameter_inches / (USABLE_WIDTH / inch)))
-    pages_y = int(math.ceil(diameter_inches / (USABLE_HEIGHT / inch)))
+    # Calculate how many pages needed (grid) - using FULL page, no margins
+    pages_x = int(math.ceil(diameter_inches / (PAGE_WIDTH / inch)))
+    pages_y = int(math.ceil(diameter_inches / (PAGE_HEIGHT / inch)))
+    
+    # Calculate total grid dimensions and center the circle
+    total_width_inches = pages_x * (PAGE_WIDTH / inch)
+    total_height_inches = pages_y * (PAGE_HEIGHT / inch)
+    circle_center_x = total_width_inches / 2
+    circle_center_y = total_height_inches / 2
     
     # Create PDF in memory
     buffer = BytesIO()
@@ -81,25 +85,25 @@ def generate_printable_template(num_nails, radius_cm):
     # Page 1: Assembly Guide
     # =========================================================================
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(MARGIN, PAGE_HEIGHT - MARGIN, "String Art Template - Assembly Guide")
+    c.drawString(INSTRUCTION_MARGIN, PAGE_HEIGHT - INSTRUCTION_MARGIN, "String Art Template - Assembly Guide")
     
     c.setFont("Helvetica", 12)
-    y_pos = PAGE_HEIGHT - MARGIN - 30
-    c.drawString(MARGIN, y_pos, f"Circle Diameter: {radius_cm * 2:.1f} cm ({diameter_inches:.1f} inches)")
+    y_pos = PAGE_HEIGHT - INSTRUCTION_MARGIN - 30
+    c.drawString(INSTRUCTION_MARGIN, y_pos, f"Circle Diameter: {radius_cm * 2:.1f} cm ({diameter_inches:.1f} inches)")
     y_pos -= 20
-    c.drawString(MARGIN, y_pos, f"Number of Nails: {num_nails}")
+    c.drawString(INSTRUCTION_MARGIN, y_pos, f"Number of Nails: {num_nails}")
     y_pos -= 20
-    c.drawString(MARGIN, y_pos, f"Template Pages: {pages_x} × {pages_y} = {pages_x * pages_y} pages")
+    c.drawString(INSTRUCTION_MARGIN, y_pos, f"Template Pages: {pages_x} × {pages_y} = {pages_x * pages_y} pages")
     
     y_pos -= 40
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(MARGIN, y_pos, "Assembly Instructions:")
+    c.drawString(INSTRUCTION_MARGIN, y_pos, "Assembly Instructions:")
     
     y_pos -= 25
     c.setFont("Helvetica", 11)
     instructions = [
         "1. Print all pages at 100% scale (DO NOT scale to fit)",
-        "2. Trim pages along the dotted cut lines",
+        "2. Cut pages along their edges (full bleed - no margins)",
         "3. Arrange pages according to the grid below",
         "4. Tape pages together on the back side",
         "5. Transfer nail positions to your circular board",
@@ -108,25 +112,39 @@ def generate_printable_template(num_nails, radius_cm):
     ]
     
     for instruction in instructions:
-        c.drawString(MARGIN, y_pos, instruction)
+        c.drawString(INSTRUCTION_MARGIN, y_pos, instruction)
         y_pos -= 18
     
     # Draw page grid reference
     y_pos -= 30
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(MARGIN, y_pos, "Page Layout:")
+    c.drawString(INSTRUCTION_MARGIN, y_pos, "Page Layout:")
     y_pos -= 25
     
-    # Draw simple grid showing page arrangement
-    cell_size = 30
-    c.setFont("Helvetica", 9)
+    # Draw grid showing actual page proportions (8.5 x 11 inches)
+    # Scale it down to fit on the page
+    max_grid_width = 5 * inch  # Maximum width for the grid
+    max_grid_height = 6 * inch  # Maximum height for the grid
+    
+    # Calculate scale to fit
+    scale_x = max_grid_width / (pages_x * 8.5)
+    scale_y = max_grid_height / (pages_y * 11)
+    scale = min(scale_x, scale_y)  # Use smaller scale to fit both dimensions
+    
+    # Calculate cell dimensions with proper aspect ratio
+    cell_width = 8.5 * scale
+    cell_height = 11 * scale
+    
+    c.setFont("Helvetica", 8)
     for py in range(pages_y):
         for px in range(pages_x):
             page_num = py * pages_x + px + 2  # +2 because page 1 is this guide
-            x = MARGIN + px * cell_size
-            y = y_pos - py * cell_size
-            c.rect(x, y, cell_size, cell_size)
-            c.drawString(x + 8, y + 12, f"P{page_num}")
+            x = INSTRUCTION_MARGIN + px * cell_width
+            y = y_pos - (py + 1) * cell_height  # +1 to draw from top-down
+            c.rect(x, y, cell_width, cell_height)
+            # Center the page number
+            text_width = c.stringWidth(f"P{page_num}", "Helvetica", 8)
+            c.drawString(x + (cell_width - text_width) / 2, y + cell_height / 2 - 2, f"P{page_num}")
     
     c.showPage()  # End assembly guide page
     
@@ -136,53 +154,40 @@ def generate_printable_template(num_nails, radius_cm):
     page_num = 2
     for page_y in range(pages_y):
         for page_x in range(pages_x):
-            # Calculate this page's portion of the circle (in inches)
-            page_left = page_x * (USABLE_WIDTH / inch)
-            page_bottom = page_y * (USABLE_HEIGHT / inch)
-            page_right = page_left + (USABLE_WIDTH / inch)
-            page_top = page_bottom + (USABLE_HEIGHT / inch)
+            # Calculate this page's portion of the total grid (in inches)
+            # No margins - use full page!
+            page_left = page_x * (PAGE_WIDTH / inch)
+            page_bottom = page_y * (PAGE_HEIGHT / inch)
+            page_right = page_left + (PAGE_WIDTH / inch)
+            page_top = page_bottom + (PAGE_HEIGHT / inch)
             
-            # Circle center in inches (relative to full grid)
-            circle_center_x = diameter_inches / 2
-            circle_center_y = diameter_inches / 2
+            # Transform to page coordinates (no margin offset!)
+            offset_x = -page_left
+            offset_y = -page_bottom
             
-            # Transform to page coordinates
-            offset_x = MARGIN / inch - page_left
-            offset_y = MARGIN / inch - page_bottom
-            
-            # Draw cut guides (dashed lines at page edges)
-            c.setDash(3, 3)
-            c.setStrokeColor(colors.grey)
-            c.line(MARGIN, MARGIN, MARGIN, PAGE_HEIGHT - MARGIN)  # Left
-            c.line(PAGE_WIDTH - MARGIN, MARGIN, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - MARGIN)  # Right
-            c.line(MARGIN, MARGIN, PAGE_WIDTH - MARGIN, MARGIN)  # Bottom
-            c.line(MARGIN, PAGE_HEIGHT - MARGIN, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - MARGIN)  # Top
-            
-            # Draw circle arc (if it intersects this page)
-            c.setDash()  # Solid line
+            # Draw circle outline (it will be clipped by page boundaries)
             c.setStrokeColor(colors.black)
             c.setLineWidth(1)
             
-            # Calculate which part of the circle appears on this page
-            # Draw a partial circle arc
+            # Calculate circle center position on this page
             center_x_on_page = (circle_center_x + offset_x) * inch
             center_y_on_page = (circle_center_y + offset_y) * inch
             
-            # Draw circle outline (it will be clipped by the page boundaries)
             c.circle(center_x_on_page, center_y_on_page, radius_inches * inch, stroke=1, fill=0)
             
             # Draw nails that fall on this page
             c.setFillColor(colors.black)
-            c.setFont("Helvetica", 7)
+            c.setFont("Helvetica", 8)  # Slightly larger font
             
             nails_on_page = 0
             for nail_idx in range(num_nails):
+                # Calculate angle - matches tab sequence (0-indexed becomes 1-indexed for display)
                 angle = (nail_idx / num_nails) * 2 * math.pi
                 nail_x = circle_center_x + radius_inches * math.cos(angle)
                 nail_y = circle_center_y + radius_inches * math.sin(angle)
                 
-                # Check if this nail is on this page (with small margin)
-                margin_buffer = 0.2  # inches
+                # Check if this nail is on this page (with buffer for numbers)
+                margin_buffer = 0.3  # inches - bigger buffer for numbers that bleed off page
                 if (page_left - margin_buffer <= nail_x <= page_right + margin_buffer and 
                     page_bottom - margin_buffer <= nail_y <= page_top + margin_buffer):
                     
@@ -194,22 +199,21 @@ def generate_printable_template(num_nails, radius_cm):
                     c.setLineWidth(1.5)
                     c.circle(page_x_pos, page_y_pos, 3, stroke=1, fill=1)
                     
-                    # Draw nail number next to the nail
-                    nail_num = nail_idx + 1  # 1-indexed
-                    text_offset = 6
-                    c.drawString(page_x_pos + text_offset, page_y_pos - 2, str(nail_num))
+                    # Draw nail number - position based on angle to avoid overlap
+                    nail_num = nail_idx + 1  # 1-indexed to match tab sequence
+                    
+                    # Calculate text offset based on angle - push numbers outward from center
+                    # Increase base offset to move numbers further from holes
+                    base_offset = 12  # Much larger offset
+                    text_x_offset = base_offset * math.cos(angle)
+                    text_y_offset = base_offset * math.sin(angle)
+                    
+                    # Adjust text position so it doesn't overlap with nail
+                    text_x = page_x_pos + text_x_offset
+                    text_y = page_y_pos + text_y_offset - 3  # Slight vertical adjustment for centering
+                    
+                    c.drawString(text_x, text_y, str(nail_num))
                     nails_on_page += 1
-            
-            # Add page header
-            c.setFont("Helvetica", 10)
-            c.setFillColor(colors.grey)
-            c.drawString(MARGIN, PAGE_HEIGHT - MARGIN + 15, 
-                        f"Page {page_num} of {pages_x * pages_y + 1} | Row {page_y + 1}, Col {page_x + 1}")
-            
-            # Add scale reference
-            c.drawString(MARGIN, MARGIN - 15, 
-                        f"Radius: {radius_cm}cm | Nails: {num_nails} | Scale: 100%")
-            c.setFillColor(colors.black)
             
             c.showPage()  # End this page
             page_num += 1
