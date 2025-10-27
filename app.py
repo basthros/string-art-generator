@@ -121,6 +121,21 @@ def generate_printable_template(num_nails, radius_cm):
     c.drawString(INSTRUCTION_MARGIN, y_pos, "Page Layout:")
     y_pos -= 25
     
+    # First, detect which pages have nails (non-blank pages)
+    pages_with_nails = set()
+    for nail_idx in range(num_nails):
+        angle = (nail_idx / num_nails) * 2 * math.pi
+        nail_x = circle_center_x + radius_inches * math.cos(angle)
+        nail_y = circle_center_y + radius_inches * math.sin(angle)
+        
+        # Determine which page this nail is on
+        page_x_idx = int(nail_x / (PAGE_WIDTH / inch))
+        page_y_idx = int(nail_y / (PAGE_HEIGHT / inch))
+        
+        # Check bounds
+        if 0 <= page_x_idx < pages_x and 0 <= page_y_idx < pages_y:
+            pages_with_nails.add((page_x_idx, page_y_idx))
+    
     # Draw grid showing actual page proportions (8.5 x 11 inches)
     # Scale it down to fit on the page
     max_grid_width = 5 * inch  # Maximum width for the grid
@@ -135,16 +150,58 @@ def generate_printable_template(num_nails, radius_cm):
     cell_width = 8.5 * scale
     cell_height = 11 * scale
     
+    # Calculate grid starting position
+    grid_start_x = INSTRUCTION_MARGIN
+    grid_start_y = y_pos - pages_y * cell_height
+    
+    # Draw the circle on the layout to show how it spans pages
+    c.setStrokeColor(colors.grey)
+    c.setLineWidth(0.5)
+    c.setDash(2, 2)
+    # Circle center should be in the center of the total grid
+    layout_circle_center_x = grid_start_x + (pages_x * cell_width) / 2
+    layout_circle_center_y = grid_start_y + (pages_y * cell_height) / 2
+    layout_circle_radius = radius_inches * scale
+    c.circle(layout_circle_center_x, layout_circle_center_y, layout_circle_radius, stroke=1, fill=0)
+    c.setDash()  # Reset dash
+    
+    # Draw page grid
     c.setFont("Helvetica", 8)
     for py in range(pages_y):
         for px in range(pages_x):
             page_num = py * pages_x + px + 2  # +2 because page 1 is this guide
-            x = INSTRUCTION_MARGIN + px * cell_width
-            y = y_pos - (py + 1) * cell_height  # +1 to draw from top-down
-            c.rect(x, y, cell_width, cell_height)
-            # Center the page number
-            text_width = c.stringWidth(f"P{page_num}", "Helvetica", 8)
-            c.drawString(x + (cell_width - text_width) / 2, y + cell_height / 2 - 2, f"P{page_num}")
+            x = grid_start_x + px * cell_width
+            y = grid_start_y + py * cell_height
+            
+            # Check if this page is blank
+            is_blank = (px, py) not in pages_with_nails
+            
+            if is_blank:
+                # Grey out blank pages
+                c.setFillColor(colors.lightgrey)
+                c.rect(x, y, cell_width, cell_height, stroke=0, fill=1)
+                c.setStrokeColor(colors.grey)
+                c.setLineWidth(1)
+                c.rect(x, y, cell_width, cell_height, stroke=1, fill=0)
+                
+                # Write "blank" in center
+                c.setFillColor(colors.grey)
+                c.setFont("Helvetica", 6)
+                text = "blank"
+                text_width = c.stringWidth(text, "Helvetica", 6)
+                c.drawString(x + (cell_width - text_width) / 2, y + cell_height / 2 - 2, text)
+            else:
+                # Draw normal page box
+                c.setStrokeColor(colors.black)
+                c.setLineWidth(1)
+                c.rect(x, y, cell_width, cell_height, stroke=1, fill=0)
+                
+                # Center the page number
+                c.setFillColor(colors.black)
+                c.setFont("Helvetica", 8)
+                text = f"P{page_num}"
+                text_width = c.stringWidth(text, "Helvetica", 8)
+                c.drawString(x + (cell_width - text_width) / 2, y + cell_height / 2 - 2, text)
     
     c.showPage()  # End assembly guide page
     
@@ -154,6 +211,11 @@ def generate_printable_template(num_nails, radius_cm):
     page_num = 2
     for page_y in range(pages_y):
         for page_x in range(pages_x):
+            # Skip blank pages (pages with no nails)
+            if (page_x, page_y) not in pages_with_nails:
+                page_num += 1
+                continue
+            
             # Calculate this page's portion of the total grid (in inches)
             # No margins - use full page!
             page_left = page_x * (PAGE_WIDTH / inch)
@@ -177,7 +239,7 @@ def generate_printable_template(num_nails, radius_cm):
             
             # Draw nails that fall on this page
             c.setFillColor(colors.black)
-            c.setFont("Helvetica", 8)  # Slightly larger font
+            c.setFont("Helvetica", 7)  # Smaller font for less overlap
             
             nails_on_page = 0
             for nail_idx in range(num_nails):
@@ -187,7 +249,7 @@ def generate_printable_template(num_nails, radius_cm):
                 nail_y = circle_center_y + radius_inches * math.sin(angle)
                 
                 # Check if this nail is on this page (with buffer for numbers)
-                margin_buffer = 0.3  # inches - bigger buffer for numbers that bleed off page
+                margin_buffer = 0.4  # inches - bigger buffer for numbers that bleed off page
                 if (page_left - margin_buffer <= nail_x <= page_right + margin_buffer and 
                     page_bottom - margin_buffer <= nail_y <= page_top + margin_buffer):
                     
@@ -203,8 +265,8 @@ def generate_printable_template(num_nails, radius_cm):
                     nail_num = nail_idx + 1  # 1-indexed to match tab sequence
                     
                     # Calculate text offset based on angle - push numbers outward from center
-                    # Increase base offset to move numbers further from holes
-                    base_offset = 12  # Much larger offset
+                    # Much larger offset to prevent overlap especially on vertical sections
+                    base_offset = 18  # Increased significantly
                     text_x_offset = base_offset * math.cos(angle)
                     text_y_offset = base_offset * math.sin(angle)
                     
