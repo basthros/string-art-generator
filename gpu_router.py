@@ -268,8 +268,9 @@ class GPURouter:
                     raise Exception(f"Home GPU error: {response.status_code}")
             
             # Process SSE stream
+            # CRITICAL: chunk_size=1 disables buffering for real-time streaming
             final_result = None
-            for line in response.iter_lines(decode_unicode=True):
+            for line in response.iter_lines(decode_unicode=True, chunk_size=1):
                 if not line:
                     continue
                 
