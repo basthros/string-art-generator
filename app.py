@@ -4,9 +4,17 @@ eventlet.monkey_patch()
 
 import os
 import time
+import math
+from io import BytesIO
 from flask import Flask, render_template, request, send_file
 from flask_socketio import SocketIO
 import requests
+
+# PDF generation imports
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas as pdf_canvas
+from reportlab.lib import colors
 
 # Import our GPU router
 from gpu_router import GPURouter
@@ -47,15 +55,195 @@ def index():
     return render_template('index.html')
 
 
+def generate_printable_template(num_nails, radius_cm):
+    """Generate multi-page printable template with assembly guide"""
+    
+    # Letter paper dimensions
+    PAGE_WIDTH = 8.5 * inch
+    PAGE_HEIGHT = 11 * inch
+    MARGIN = 0.5 * inch
+    USABLE_WIDTH = PAGE_WIDTH - 2 * MARGIN
+    USABLE_HEIGHT = PAGE_HEIGHT - 2 * MARGIN
+    
+    # Convert radius to inches for PDF
+    radius_inches = radius_cm / 2.54
+    diameter_inches = radius_inches * 2
+    
+    # Calculate how many pages needed (grid)
+    pages_x = int(math.ceil(diameter_inches / (USABLE_WIDTH / inch)))
+    pages_y = int(math.ceil(diameter_inches / (USABLE_HEIGHT / inch)))
+    
+    # Create PDF in memory
+    buffer = BytesIO()
+    c = pdf_canvas.Canvas(buffer, pagesize=letter)
+    
+    # =========================================================================
+    # Page 1: Assembly Guide
+    # =========================================================================
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(MARGIN, PAGE_HEIGHT - MARGIN, "String Art Template - Assembly Guide")
+    
+    c.setFont("Helvetica", 12)
+    y_pos = PAGE_HEIGHT - MARGIN - 30
+    c.drawString(MARGIN, y_pos, f"Circle Diameter: {radius_cm * 2:.1f} cm ({diameter_inches:.1f} inches)")
+    y_pos -= 20
+    c.drawString(MARGIN, y_pos, f"Number of Nails: {num_nails}")
+    y_pos -= 20
+    c.drawString(MARGIN, y_pos, f"Template Pages: {pages_x} × {pages_y} = {pages_x * pages_y} pages")
+    
+    y_pos -= 40
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(MARGIN, y_pos, "Assembly Instructions:")
+    
+    y_pos -= 25
+    c.setFont("Helvetica", 11)
+    instructions = [
+        "1. Print all pages at 100% scale (DO NOT scale to fit)",
+        "2. Trim pages along the dotted cut lines",
+        "3. Arrange pages according to the grid below",
+        "4. Tape pages together on the back side",
+        "5. Transfer nail positions to your circular board",
+        "6. Hammer small nails at each marked position",
+        "7. Start at nail #1 and follow your sequence"
+    ]
+    
+    for instruction in instructions:
+        c.drawString(MARGIN, y_pos, instruction)
+        y_pos -= 18
+    
+    # Draw page grid reference
+    y_pos -= 30
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(MARGIN, y_pos, "Page Layout:")
+    y_pos -= 25
+    
+    # Draw simple grid showing page arrangement
+    cell_size = 30
+    c.setFont("Helvetica", 9)
+    for py in range(pages_y):
+        for px in range(pages_x):
+            page_num = py * pages_x + px + 2  # +2 because page 1 is this guide
+            x = MARGIN + px * cell_size
+            y = y_pos - py * cell_size
+            c.rect(x, y, cell_size, cell_size)
+            c.drawString(x + 8, y + 12, f"P{page_num}")
+    
+    c.showPage()  # End assembly guide page
+    
+    # =========================================================================
+    # Generate template pages with nail positions
+    # =========================================================================
+    page_num = 2
+    for page_y in range(pages_y):
+        for page_x in range(pages_x):
+            # Calculate this page's portion of the circle (in inches)
+            page_left = page_x * (USABLE_WIDTH / inch)
+            page_bottom = page_y * (USABLE_HEIGHT / inch)
+            page_right = page_left + (USABLE_WIDTH / inch)
+            page_top = page_bottom + (USABLE_HEIGHT / inch)
+            
+            # Circle center in inches (relative to full grid)
+            circle_center_x = diameter_inches / 2
+            circle_center_y = diameter_inches / 2
+            
+            # Transform to page coordinates
+            offset_x = MARGIN / inch - page_left
+            offset_y = MARGIN / inch - page_bottom
+            
+            # Draw cut guides (dashed lines at page edges)
+            c.setDash(3, 3)
+            c.setStrokeColor(colors.grey)
+            c.line(MARGIN, MARGIN, MARGIN, PAGE_HEIGHT - MARGIN)  # Left
+            c.line(PAGE_WIDTH - MARGIN, MARGIN, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - MARGIN)  # Right
+            c.line(MARGIN, MARGIN, PAGE_WIDTH - MARGIN, MARGIN)  # Bottom
+            c.line(MARGIN, PAGE_HEIGHT - MARGIN, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - MARGIN)  # Top
+            
+            # Draw circle arc (if it intersects this page)
+            c.setDash()  # Solid line
+            c.setStrokeColor(colors.black)
+            c.setLineWidth(1)
+            
+            # Calculate which part of the circle appears on this page
+            # Draw a partial circle arc
+            center_x_on_page = (circle_center_x + offset_x) * inch
+            center_y_on_page = (circle_center_y + offset_y) * inch
+            
+            # Draw circle outline (it will be clipped by the page boundaries)
+            c.circle(center_x_on_page, center_y_on_page, radius_inches * inch, stroke=1, fill=0)
+            
+            # Draw nails that fall on this page
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 7)
+            
+            nails_on_page = 0
+            for nail_idx in range(num_nails):
+                angle = (nail_idx / num_nails) * 2 * math.pi
+                nail_x = circle_center_x + radius_inches * math.cos(angle)
+                nail_y = circle_center_y + radius_inches * math.sin(angle)
+                
+                # Check if this nail is on this page (with small margin)
+                margin_buffer = 0.2  # inches
+                if (page_left - margin_buffer <= nail_x <= page_right + margin_buffer and 
+                    page_bottom - margin_buffer <= nail_y <= page_top + margin_buffer):
+                    
+                    # Convert to page coordinates
+                    page_x_pos = (nail_x + offset_x) * inch
+                    page_y_pos = (nail_y + offset_y) * inch
+                    
+                    # Draw nail marker (small circle)
+                    c.setLineWidth(1.5)
+                    c.circle(page_x_pos, page_y_pos, 3, stroke=1, fill=1)
+                    
+                    # Draw nail number next to the nail
+                    nail_num = nail_idx + 1  # 1-indexed
+                    text_offset = 6
+                    c.drawString(page_x_pos + text_offset, page_y_pos - 2, str(nail_num))
+                    nails_on_page += 1
+            
+            # Add page header
+            c.setFont("Helvetica", 10)
+            c.setFillColor(colors.grey)
+            c.drawString(MARGIN, PAGE_HEIGHT - MARGIN + 15, 
+                        f"Page {page_num} of {pages_x * pages_y + 1} | Row {page_y + 1}, Col {page_x + 1}")
+            
+            # Add scale reference
+            c.drawString(MARGIN, MARGIN - 15, 
+                        f"Radius: {radius_cm}cm | Nails: {num_nails} | Scale: 100%")
+            c.setFillColor(colors.black)
+            
+            c.showPage()  # End this page
+            page_num += 1
+    
+    # Save PDF
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+
 @app.route('/download_template/<num_nails>/<radius_cm>')
 def download_template(num_nails, radius_cm):
     """Generate and download printable template PDF"""
     try:
         num_nails = int(num_nails)
         radius_cm = float(radius_cm)
-        return f"Template for {num_nails} nails and {radius_cm}cm radius. (PDF generation logic to be added)"
+        
+        print(f"📄 Generating template PDF: {num_nails} nails, {radius_cm}cm radius")
+        
+        # Generate PDF
+        pdf_buffer = generate_printable_template(num_nails, radius_cm)
+        
+        # Send as downloadable file
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'string_art_template_{num_nails}nails_{int(radius_cm * 2)}cm.pdf'
+        )
     except Exception as e:
-        return str(e), 500
+        print(f"❌ Error generating template: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Error generating template: {str(e)}", 500
 
 
 @app.route('/gpu-stats')

@@ -4,3 +4,4 @@ Flask-SocketIO==5.3.6
 python-socketio==5.11.0
 eventlet==0.35.2
 requests==2.31.0
+reportlab==4.0.4
