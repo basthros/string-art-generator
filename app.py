@@ -173,7 +173,8 @@ def generate_printable_template(num_nails, radius_cm):
             py = pages_y - 1 - reading_row
             
             x = grid_start_x + px * cell_width
-            y = grid_start_y + reading_row * cell_height
+            # Draw reading_row=0 at TOP of grid (highest y value)
+            y = grid_start_y + (pages_y - 1 - reading_row) * cell_height
             
             # Check if this page is blank
             is_blank = (px, py) not in pages_with_nails
