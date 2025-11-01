@@ -912,7 +912,16 @@
                 reader.readAsDataURL(file);
             });
         }
-
+        // Calculate visual line width based on physical parameters
+        function calculateLineWidth(threadThicknessMm, circleRadiusCm) {
+            const CANVAS_RADIUS = 390; // pixels
+            const threadThicknessCm = threadThicknessMm / 10; // Convert mm to cm
+            const proportionalThickness = threadThicknessCm / circleRadiusCm;
+            const visualWidth = proportionalThickness * CANVAS_RADIUS;
+            
+            // Clamp between 0.1 and 5 pixels for visibility
+            return Math.max(0.1, Math.min(5, visualWidth));
+        }
         // ====================================================================
         // Socket.IO Setup
         // ====================================================================
@@ -1162,7 +1171,9 @@
                 const toPos = getSequenceNailPos(toNail);
                 
                 sequenceCtx.strokeStyle = '#000';
-                sequenceCtx.lineWidth = 3;
+                const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+                const circleRadius = parseFloat(document.getElementById('circleRadius').value);
+                sequenceCtx.lineWidth = calculateLineWidth(threadThickness, circleRadius);
                 sequenceCtx.beginPath();
                 sequenceCtx.moveTo(fromPos.x, fromPos.y);
                 sequenceCtx.lineTo(toPos.x, toPos.y);
@@ -2162,24 +2173,29 @@
         // Animation Function
         // ====================================================================
         function animateDrawing(sequence, currentNumNails) {
-            console.log(`Starting animation with ${sequence.length} points and ${currentNumNails} nails...`);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            
+    
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawCircle(currentNumNails); 
+    
+            // Get current parameters for line width calculation
+            const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+            const circleRadius = parseFloat(document.getElementById('circleRadius').value);
+    
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.lineWidth = 1;
-            
+            ctx.lineWidth = calculateLineWidth(threadThickness, circleRadius); // ← Use calculated width
+    
             let i = 0;
             const linesPerFrame = 10; 
-            
+    
             function drawStep() {
                 const end = Math.min(i + linesPerFrame, sequence.length - 1);
                 for (; i < end; i++) {
                     const startNail = sequence[i] - 1;
                     const endNail = sequence[i + 1] - 1;
-                    if (startNail < 0 || startNail >= currentNumNails || endNail < 0 || endNail >= currentNumNails) {
-                        console.error(`Invalid nail index at step ${i}: ${startNail+1} -> ${endNail+1}. Max nails: ${currentNumNails}`);
+                    if (startNail < 0 || startNail >= currentNumNails || 
+                        endNail < 0 || endNail >= currentNumNails) {
+                        console.error(`Invalid nail index`);
                         continue; 
                     }
                     const startPos = getDrawPosition(startNail, currentNumNails);
@@ -2189,16 +2205,11 @@
                     ctx.lineTo(endPos.x, endPos.y);
                     ctx.stroke();
                 }
-                const progress = Math.min(100, (i / (sequence.length - 1)) * 100);
-                status.textContent = `Animating... ${Math.round(progress)}%`;
-                
                 if (i < sequence.length - 1) {
                     animationFrameId = requestAnimationFrame(drawStep); 
                 } else {
-                    console.log('✅ Animation complete.');
-                    status.textContent = '✅ Pattern complete!';
                     hasValidCanvasData = true;
-                    animationFrameId = null;  // Clear BEFORE saving so canvas data gets saved
+                    animationFrameId = null;
                     saveState();
                 }
             }
@@ -2229,29 +2240,28 @@
 
         // NEW: Real-time line drawing for home GPU
         socket.on('new_line', (data) => {
-            // Only draw if we're currently generating (before final_sequence arrives)
             if (isGenerating && pinSequence.length === 0) {
-                // Mark that real-time animation is happening
                 animationAlreadyPlayed = true;
-                
-                // Draw line immediately
+        
                 const startNail = data.start;
                 const endNail = data.end;
-        
-                if (startNail >= 0 && startNail < numNails && endNail >= 0 && endNail < numNails) {
+
+                if (startNail >= 0 && startNail < numNails && 
+                    endNail >= 0 && endNail < numNails) {
                     const startPos = getDrawPosition(startNail, numNails);
                     const endPos = getDrawPosition(endNail, numNails);
+    
+                    // Get current parameters
+                    const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+                    const circleRadius = parseFloat(document.getElementById('circleRadius').value);
             
                     ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                    ctx.lineWidth = 1;
+                    ctx.lineWidth = calculateLineWidth(threadThickness, circleRadius); // ← Use calculated width
                     ctx.beginPath();
                     ctx.moveTo(startPos.x, startPos.y);
                     ctx.lineTo(endPos.x, endPos.y);
                     ctx.stroke();
                 }
-        
-                // Store for final sequence (temporary, will be replaced by final_sequence)
-                // This is just for real-time preview
             }
         });
         
@@ -2293,7 +2303,9 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 drawCircle(numNails);
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                ctx.lineWidth = 1;
+                const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+                const circleRadius = parseFloat(document.getElementById('circleRadius').value);
+                ctx.lineWidth = calculateLineWidth(threadThickness, circleRadius);;
                 
                 for (let i = 0; i < pinSequence.length - 1; i++) {
                     const startNail = pinSequence[i] - 1;
