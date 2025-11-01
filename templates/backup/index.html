@@ -680,14 +680,631 @@
                 width: 100%;
             }
         }
+    
+/* ============================================================================
+   AUTH & USER MENU STYLES
+   ============================================================================ */
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.user-menu {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn-header {
+    padding: 8px 16px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn-header:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-primary-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.btn-primary-header:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #663a91 100%);
+}
+
+.user-dropdown {
+    position: relative;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.user-avatar:hover {
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    min-width: 250px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dropdown-header {
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.dropdown-header strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.user-email {
+    display: block;
+    font-size: 12px;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.user-plan {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #e0e0e0;
+    margin: 8px 0;
+}
+
+.dropdown-item {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+/* Auth Modal Styles */
+.auth-modal-content {
+    max-width: 450px;
+    padding: 40px;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+}
+
+.auth-tab.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.auth-form {
+    display: none;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+.auth-form h2 {
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.auth-subtitle {
+    color: #666;
+    margin: 0 0 24px 0;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.auth-btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin-bottom: 16px;
+}
+
+.auth-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.auth-btn.google {
+    background: white;
+    border: 2px solid #e0e0e0;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.auth-btn.google:hover {
+    border-color: #4285F4;
+    background: #f8f9ff;
+}
+
+.auth-btn.github {
+    background: #24292e;
+    color: white;
+}
+
+.auth-btn.github:hover {
+    background: #1b1f23;
+}
+
+.auth-divider {
+    position: relative;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e0e0e0;
+}
+
+.auth-divider span {
+    position: relative;
+    background: white;
+    padding: 0 15px;
+    color: #999;
+    font-size: 12px;
+}
+
+.auth-links {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.link-btn {
+    border: none;
+    background: none;
+    color: #667eea;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    padding: 8px;
+}
+
+.link-btn:hover {
+    text-decoration: underline;
+}
+
+.auth-terms {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+}
+
+.auth-terms a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.auth-terms a:hover {
+    text-decoration: underline;
+}
+
+/* Save Design Modal */
+.save-modal-content {
+    max-width: 400px;
+}
+
+.modal-subtitle {
+    color: #666;
+    margin: -10px 0 20px 0;
+    font-size: 14px;
+}
+
+.form-status {
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: none;
+}
+
+.form-status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    display: block;
+}
+
+.form-status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    display: block;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    color: #333;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    border-color: #ccc;
+    background: #f5f5f5;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* My Designs Modal */
+.designs-modal-content {
+    max-width: 900px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.designs-limit-info {
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.designs-limit-info p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.btn-upgrade {
+    padding: 8px 16px;
+    border: none;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.btn-upgrade:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
+.designs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.design-card {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.design-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
+}
+
+.design-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: #f5f5f5;
+}
+
+.design-card-content {
+    padding: 16px;
+}
+
+.design-card-name {
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.design-card-info {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.design-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.btn-small {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+    background: #f5f5f5;
+}
+
+.btn-small.danger:hover {
+    background: #fee;
+    border-color: #f5576c;
+    color: #f5576c;
+}
+
+.no-designs {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.no-designs p:first-child {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+/* Upgrade Modal */
+.upgrade-modal-content {
+    max-width: 700px;
+}
+
+.pricing-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 30px 0;
+}
+
+.pricing-plan {
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 32px;
+    position: relative;
+}
+
+.pricing-plan.pro {
+    border-color: #667eea;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+}
+
+.popular-badge {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.pricing-plan h3 {
+    margin: 0 0 16px 0;
+    font-size: 24px;
+}
+
+.price {
+    font-size: 36px;
+    font-weight: bold;
+    color: #667eea;
+    margin: 0 0 24px 0;
+}
+
+.price span {
+    font-size: 16px;
+    color: #999;
+    font-weight: normal;
+}
+
+.pricing-plan ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px 0;
+}
+
+.pricing-plan li {
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.btn-large {
+    padding: 14px 28px;
+    font-size: 16px;
+}
+
+.upgrade-footer {
+    text-align: center;
+    color: #999;
+    font-size: 13px;
+    margin-top: 20px;
+}
+
     </style>
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Supabase Client (our custom file) -->
+    <script src="/static/js/supabase-client.js"></script>
+
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <div class="header-content">
+            <div>
             <h1>🎨 String Art Generator</h1>
-            <p>CUDA-Accelerated Nail Pattern Creation with Multilingual Voice Guidance</p>
+                <p>CUDA-Accelerated Nail Pattern Creation with Multilingual Voice Guidance</p>
+            </div>
+        
+            <!-- User Menu (logged out state) -->
+            <div id="userMenuLoggedOut" class="user-menu">
+                <button class="btn-header" onclick="openAuthModal('signin')">Sign In</button>
+                <button class="btn-header btn-primary-header" onclick="openAuthModal('signup')">Sign Up</button>
+            </div>
+        
+            <!-- User Menu (logged in state) -->
+            <div id="userMenuLoggedIn" class="user-menu" style="display: none;">
+                <button class="btn-header" onclick="openMyDesignsModal()">📁 My Designs</button>
+                <div class="user-dropdown">
+                    <button class="user-avatar" onclick="toggleUserDropdown()">
+                        <span id="userInitials">U</span>
+                    </button>
+                    <div id="userDropdownMenu" class="dropdown-menu" style="display: none;">
+                        <div class="dropdown-header">
+                            <strong id="userName">User</strong>
+                            <span id="userEmail" class="user-email">user@example.com</span>
+                            <span id="userPlan" class="user-plan">Free Plan</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" onclick="showUpgradeModal()">⭐ Upgrade to Pro</button>
+                        <button class="dropdown-item" onclick="handleSignOut()">Sign Out</button>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
         
         <div class="main-content">
             <div class="controls">
@@ -726,6 +1343,9 @@
                 <button class="btn btn-secondary" id="cancelBtn" disabled>Cancel</button>
                 <button class="btn btn-restore" id="restoreBtn" style="display: none;">🔄 Restore Previous</button>
                 <button class="btn btn-download" id="downloadTemplateBtn" disabled>📄 Download Template PDF</button>
+
+                <button id="saveDesignBtn" class="btn btn-primary" style="display: none;" onclick="openSaveDesignModal()">💾 Save Design</button>
+                <button id="loadDesignBtn" class="btn btn-primary" style="display: none;" onclick="openMyDesignsModal()">📂 Load Design</button>
                 
                 <div class="status" id="status">Upload an image to begin</div>
                 
@@ -761,6 +1381,9 @@
                 <div class="tab-content active" id="finalTab">
                     <div class="canvas-wrapper">
                         <canvas id="stringArtCanvas" width="800" height="800"></canvas>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-primary" id="replayBtn" disabled style="width: auto; padding: 12px 30px;">🔄 Replay Animation</button>
                     </div>
                 </div>
                 
@@ -909,7 +1532,16 @@
                 reader.readAsDataURL(file);
             });
         }
-
+        // Calculate visual line width based on physical parameters
+        function calculateLineWidth(threadThicknessMm, circleRadiusCm) {
+            const CANVAS_RADIUS = 390; // pixels
+            const threadThicknessCm = threadThicknessMm / 10; // Convert mm to cm
+            const proportionalThickness = threadThicknessCm / circleRadiusCm;
+            const visualWidth = proportionalThickness * CANVAS_RADIUS;
+            
+            // Clamp between 0.1 and 5 pixels for visibility
+            return Math.max(0.1, Math.min(5, visualWidth));
+        }
         // ====================================================================
         // Socket.IO Setup
         // ====================================================================
@@ -999,6 +1631,9 @@
         const cancelCrop = document.getElementById('cancelCrop');
         const applyCrop = document.getElementById('applyCrop');
         
+        // Replay button
+        const replayBtn = document.getElementById('replayBtn');
+        
         // ====================================================================
         // State Variables
         // ====================================================================
@@ -1031,6 +1666,7 @@
 
         // Animation control
         let animationFrameId = null;
+        let animationAlreadyPlayed = false; // Track if real-time animation happened
 
         // ====================================================================
         // GPU Wake-up Trigger
@@ -1155,7 +1791,9 @@
                 const toPos = getSequenceNailPos(toNail);
                 
                 sequenceCtx.strokeStyle = '#000';
-                sequenceCtx.lineWidth = 3;
+                const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+                const circleRadius = parseFloat(document.getElementById('circleRadius').value);
+                sequenceCtx.lineWidth = calculateLineWidth(threadThickness, circleRadius);
                 sequenceCtx.beginPath();
                 sequenceCtx.moveTo(fromPos.x, fromPos.y);
                 sequenceCtx.lineTo(toPos.x, toPos.y);
@@ -1890,6 +2528,13 @@
             if (originalImageData) showCropModal(originalImageData);
         });
 
+        replayBtn.addEventListener('click', () => {
+            if (pinSequence && pinSequence.length > 0) {
+                // Replay the animation
+                animateDrawing(pinSequence, numNails);
+            }
+        });
+
         function processSquareImage(imageData) {
             currentImageData = imageData; 
             sourceImageData = imageData; 
@@ -2148,24 +2793,29 @@
         // Animation Function
         // ====================================================================
         function animateDrawing(sequence, currentNumNails) {
-            console.log(`Starting animation with ${sequence.length} points and ${currentNumNails} nails...`);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            
+    
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawCircle(currentNumNails); 
+    
+            // Get current parameters for line width calculation
+            const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+            const circleRadius = parseFloat(document.getElementById('circleRadius').value);
+    
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.lineWidth = 1;
-            
+            ctx.lineWidth = calculateLineWidth(threadThickness, circleRadius); // ← Use calculated width
+    
             let i = 0;
             const linesPerFrame = 10; 
-            
+    
             function drawStep() {
                 const end = Math.min(i + linesPerFrame, sequence.length - 1);
                 for (; i < end; i++) {
                     const startNail = sequence[i] - 1;
                     const endNail = sequence[i + 1] - 1;
-                    if (startNail < 0 || startNail >= currentNumNails || endNail < 0 || endNail >= currentNumNails) {
-                        console.error(`Invalid nail index at step ${i}: ${startNail+1} -> ${endNail+1}. Max nails: ${currentNumNails}`);
+                    if (startNail < 0 || startNail >= currentNumNails || 
+                        endNail < 0 || endNail >= currentNumNails) {
+                        console.error(`Invalid nail index`);
                         continue; 
                     }
                     const startPos = getDrawPosition(startNail, currentNumNails);
@@ -2175,16 +2825,11 @@
                     ctx.lineTo(endPos.x, endPos.y);
                     ctx.stroke();
                 }
-                const progress = Math.min(100, (i / (sequence.length - 1)) * 100);
-                status.textContent = `Animating... ${Math.round(progress)}%`;
-                
                 if (i < sequence.length - 1) {
                     animationFrameId = requestAnimationFrame(drawStep); 
                 } else {
-                    console.log('✅ Animation complete.');
-                    status.textContent = '✅ Pattern complete!';
                     hasValidCanvasData = true;
-                    animationFrameId = null;  // Clear BEFORE saving so canvas data gets saved
+                    animationFrameId = null;
                     saveState();
                 }
             }
@@ -2215,26 +2860,28 @@
 
         // NEW: Real-time line drawing for home GPU
         socket.on('new_line', (data) => {
-            // Only draw if we're currently generating (before final_sequence arrives)
             if (isGenerating && pinSequence.length === 0) {
-                // Draw line immediately
+                animationAlreadyPlayed = true;
+        
                 const startNail = data.start;
                 const endNail = data.end;
-        
-                if (startNail >= 0 && startNail < numNails && endNail >= 0 && endNail < numNails) {
+
+                if (startNail >= 0 && startNail < numNails && 
+                    endNail >= 0 && endNail < numNails) {
                     const startPos = getDrawPosition(startNail, numNails);
                     const endPos = getDrawPosition(endNail, numNails);
+    
+                    // Get current parameters
+                    const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+                    const circleRadius = parseFloat(document.getElementById('circleRadius').value);
             
                     ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                    ctx.lineWidth = 1;
+                    ctx.lineWidth = calculateLineWidth(threadThickness, circleRadius); // ← Use calculated width
                     ctx.beginPath();
                     ctx.moveTo(startPos.x, startPos.y);
                     ctx.lineTo(endPos.x, endPos.y);
                     ctx.stroke();
                 }
-        
-                // Store for final sequence (temporary, will be replaced by final_sequence)
-                // This is just for real-time preview
             }
         });
         
@@ -2266,7 +2913,40 @@
             document.getElementById('circleRadiusValue').textContent = circleRadius;
             voiceIndex = 0; 
             
-            animateDrawing(pinSequence, numNails); 
+            // Only animate if it wasn't already drawn in real-time
+            if (!animationAlreadyPlayed) {
+                // RunPod path - animate now
+                animateDrawing(pinSequence, numNails);
+            } else {
+                // Home GPU path - animation already happened in real-time
+                // Just draw the final result immediately
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawCircle(numNails);
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+                const circleRadius = parseFloat(document.getElementById('circleRadius').value);
+                ctx.lineWidth = calculateLineWidth(threadThickness, circleRadius);;
+                
+                for (let i = 0; i < pinSequence.length - 1; i++) {
+                    const startNail = pinSequence[i] - 1;
+                    const endNail = pinSequence[i + 1] - 1;
+                    if (startNail < 0 || startNail >= numNails || endNail < 0 || endNail >= numNails) continue;
+                    
+                    const startPos = getDrawPosition(startNail, numNails);
+                    const endPos = getDrawPosition(endNail, numNails);
+                    ctx.beginPath();
+                    ctx.moveTo(startPos.x, startPos.y);
+                    ctx.lineTo(endPos.x, endPos.y);
+                    ctx.stroke();
+                }
+                
+                status.textContent = '✅ Pattern complete!';
+                hasValidCanvasData = true;
+                saveState();
+            }
+            
+            // Reset flag for next generation
+            animationAlreadyPlayed = false; 
             
             renderSequence(); 
             updateSpeechModeExamples(); 
@@ -2274,6 +2954,7 @@
             
             voicePlay.disabled = false; 
             voiceStop.disabled = false; 
+            replayBtn.disabled = false; // Enable replay button
             prevBtn.disabled = true; 
             nextBtn.disabled = pinSequence.length <= 1;
             currentStep.textContent = 'Ready to play';
@@ -2289,6 +2970,868 @@
             cancelBtn.disabled = true;
             progressContainer.style.display = 'none';
         });
+// ============================================================================
+// AUTHENTICATION EVENT HANDLERS
+// ============================================================================
+
+/**
+ * Open auth modal
+ */
+function openAuthModal(tab = 'signin') {
+    document.getElementById('authModal').style.display = 'flex';
+    switchAuthTab(tab);
+}
+
+/**
+ * Close auth modal
+ */
+function closeAuthModal() {
+    document.getElementById('authModal').style.display = 'none';
+}
+
+/**
+ * Switch between auth tabs
+ */
+function switchAuthTab(tab) {
+    // Hide all forms
+    document.querySelectorAll('.auth-form').forEach(form => {
+        form.classList.remove('active');
+    });
+    
+    // Remove active from all tabs
+    document.querySelectorAll('.auth-tab').forEach(t => {
+        t.classList.remove('active');
+    });
+    
+    // Show selected form
+    if (tab === 'signin') {
+        document.getElementById('signinForm').classList.add('active');
+        document.querySelectorAll('.auth-tab')[0].classList.add('active');
+    } else if (tab === 'signup') {
+        document.getElementById('signupForm').classList.add('active');
+        document.querySelectorAll('.auth-tab')[1].classList.add('active');
+    } else if (tab === 'magic') {
+        document.getElementById('magicForm').classList.add('active');
+    } else if (tab === 'reset') {
+        document.getElementById('resetForm').classList.add('active');
+    }
+}
+
+/**
+ * Handle sign in form submission
+ */
+async function handleSignIn(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('signinEmail').value;
+    const password = document.getElementById('signinPassword').value;
+    
+    const result = await window.SupabaseAuth.signIn(email, password);
+    
+    if (result.success) {
+        closeAuthModal();
+        showNotification('✅ Signed in successfully!', 'success');
+    } else {
+        showNotification('❌ ' + result.error, 'error');
+    }
+}
+
+/**
+ * Handle sign up form submission
+ */
+async function handleSignUp(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('signupName').value;
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    const confirmPassword = document.getElementById('signupPasswordConfirm').value;
+    
+    if (password !== confirmPassword) {
+        showNotification('❌ Passwords do not match', 'error');
+        return;
+    }
+    
+    const result = await window.SupabaseAuth.signUp(email, password, name);
+    
+    if (result.success) {
+        closeAuthModal();
+        showNotification('✅ Account created! Please check your email to verify.', 'success');
+    } else {
+        showNotification('❌ ' + result.error, 'error');
+    }
+}
+
+/**
+ * Handle magic link form submission
+ */
+async function handleMagicLink(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('magicEmail').value;
+    
+    const result = await window.SupabaseAuth.signInWithMagicLink(email);
+    
+    if (result.success) {
+        closeAuthModal();
+        showNotification('✅ Magic link sent! Check your email.', 'success');
+    } else {
+        showNotification('❌ ' + result.error, 'error');
+    }
+}
+
+/**
+ * Handle password reset form submission
+ */
+async function handlePasswordReset(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('resetEmail').value;
+    
+    const result = await window.SupabaseAuth.resetPassword(email);
+    
+    if (result.success) {
+        closeAuthModal();
+        showNotification('✅ Password reset link sent! Check your email.', 'success');
+    } else {
+        showNotification('❌ ' + result.error, 'error');
+    }
+}
+
+/**
+ * Handle OAuth sign in
+ */
+async function handleOAuthSignIn(provider) {
+    const result = await window.SupabaseAuth.signInWithOAuth(provider);
+    
+    if (!result.success) {
+        showNotification('❌ ' + result.error, 'error');
+    }
+    // OAuth redirects, so we won't see success here
+}
+
+/**
+ * Handle sign out
+ */
+async function handleSignOut() {
+    const result = await window.SupabaseAuth.signOut();
+    
+    if (result.success) {
+        showNotification('👋 Signed out successfully', 'success');
+        closeUserDropdown();
+    } else {
+        showNotification('❌ ' + result.error, 'error');
+    }
+}
+
+/**
+ * Toggle user dropdown menu
+ */
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdownMenu');
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+/**
+ * Close user dropdown
+ */
+function closeUserDropdown() {
+    document.getElementById('userDropdownMenu').style.display = 'none';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('userDropdownMenu');
+    const avatar = document.querySelector('.user-avatar');
+    
+    if (dropdown && avatar && !avatar.contains(event.target) && !dropdown.contains(event.target)) {
+        closeUserDropdown();
+    }
+});
+
+// ============================================================================
+// DESIGN MANAGEMENT HANDLERS
+// ============================================================================
+
+/**
+ * Open save design modal
+ */
+function openSaveDesignModal() {
+    const user = window.SupabaseAuth.getCurrentUser();
+    
+    if (!user) {
+        openAuthModal('signin');
+        showNotification('Please sign in to save designs', 'error');
+        return;
+    }
+    
+    if (!window.SupabaseAuth.canSaveDesign()) {
+        showUpgradeModal();
+        return;
+    }
+    
+    // Generate default name
+    const date = new Date().toLocaleDateString();
+    document.getElementById('designName').value = `Design ${date}`;
+    
+    document.getElementById('saveDesignModal').style.display = 'flex';
+}
+
+/**
+ * Close save design modal
+ */
+function closeSaveDesignModal() {
+    document.getElementById('saveDesignModal').style.display = 'none';
+    document.getElementById('saveDesignStatus').className = 'form-status';
+    document.getElementById('saveDesignStatus').textContent = '';
+}
+
+/**
+ * Handle save design form submission
+ */
+async function handleSaveDesign(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('designName').value;
+    const statusDiv = document.getElementById('saveDesignStatus');
+    
+    // Check if we have a design to save
+    if (!pinSequence || pinSequence.length === 0) {
+        statusDiv.className = 'form-status error';
+        statusDiv.textContent = 'No design to save. Generate a design first!';
+        return;
+    }
+    
+    // Get canvas image as base64
+    const canvasImage = canvas.toDataURL('image/png');
+    
+    // Get current parameters
+    const threadThickness = parseFloat(document.getElementById('threadThickness').value);
+    const circleRadius = parseFloat(document.getElementById('circleRadius').value);
+    
+    const designData = {
+        name: name,
+        imageData: currentImageData, // From your existing code
+        canvasImage: canvasImage,
+        parameters: {
+            num_nails: numNails,
+            num_strings: pinSequence.length - 1,
+            circle_radius_cm: circleRadius,
+            thread_thickness_mm: threadThickness,
+            image_resolution: parseInt(document.getElementById('imageResolution').value)
+        },
+        sequence: pinSequence,
+        patternInfo: {
+            total_length_m: parseFloat(document.getElementById('stringLength').textContent.split(' ')[0]),
+            num_lines: parseInt(document.getElementById('linesGenerated').textContent),
+            provider: lastGenerationProvider || 'unknown', // You may need to track this
+            generation_time_ms: lastGenerationTime || 0 // You may need to track this
+        }
+    };
+    
+    statusDiv.className = 'form-status';
+    statusDiv.textContent = 'Saving...';
+    
+    const result = await window.SupabaseAuth.saveDesign(designData);
+    
+    if (result.success) {
+        statusDiv.className = 'form-status success';
+        statusDiv.textContent = '✅ Design saved successfully!';
+        
+        setTimeout(() => {
+            closeSaveDesignModal();
+            showNotification('💾 Design saved!', 'success');
+        }, 1500);
+    } else if (result.needsUpgrade) {
+        closeSaveDesignModal();
+        showUpgradeModal();
+    } else {
+        statusDiv.className = 'form-status error';
+        statusDiv.textContent = '❌ ' + result.error;
+    }
+}
+
+/**
+ * Open my designs modal
+ */
+async function openMyDesignsModal() {
+    const user = window.SupabaseAuth.getCurrentUser();
+    
+    if (!user) {
+        openAuthModal('signin');
+        showNotification('Please sign in to view your designs', 'error');
+        return;
+    }
+    
+    document.getElementById('myDesignsModal').style.display = 'flex';
+    
+    // Show loading
+    const grid = document.getElementById('designsGrid');
+    grid.innerHTML = '<p style="text-align: center; padding: 40px;">Loading...</p>';
+    
+    // Load designs
+    const designs = await window.SupabaseAuth.loadUserDesigns();
+    renderDesignsGrid(designs);
+    
+    // Update limit info
+    const profile = window.SupabaseAuth.getUserProfile();
+    if (profile && !window.SupabaseAuth.isProUser()) {
+        document.getElementById('designsLimitInfo').style.display = 'flex';
+        document.getElementById('designCount').textContent = profile.design_count;
+    } else {
+        document.getElementById('designsLimitInfo').style.display = 'none';
+    }
+}
+
+/**
+ * Close my designs modal
+ */
+function closeMyDesignsModal() {
+    document.getElementById('myDesignsModal').style.display = 'none';
+}
+
+/**
+ * Render designs grid
+ */
+function renderDesignsGrid(designs) {
+    const grid = document.getElementById('designsGrid');
+    const noDesigns = document.getElementById('noDesigns');
+    
+    if (!designs || designs.length === 0) {
+        grid.style.display = 'none';
+        noDesigns.style.display = 'block';
+        return;
+    }
+    
+    grid.style.display = 'grid';
+    noDesigns.style.display = 'none';
+    
+    grid.innerHTML = designs.map(design => `
+        <div class="design-card">
+            <img src="${design.canvas_image}" alt="${design.name}" class="design-card-image" 
+                 onclick="loadDesignById('${design.id}')">
+            <div class="design-card-content">
+                <h3 class="design-card-name">${design.name}</h3>
+                <p class="design-card-info">📅 ${new Date(design.created_at).toLocaleDateString()}</p>
+                <p class="design-card-info">🎨 ${design.pattern_info.num_lines} lines</p>
+                <p class="design-card-info">📏 ${design.pattern_info.total_length_m.toFixed(1)}m string</p>
+                <div class="design-card-actions">
+                    <button class="btn-small" onclick="loadDesignById('${design.id}')">Load</button>
+                    <button class="btn-small danger" onclick="confirmDeleteDesign('${design.id}', '${design.name}')">Delete</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Load a design by ID
+ */
+async function loadDesignById(designId) {
+    const result = await window.SupabaseAuth.loadDesign(designId);
+    
+    if (!result.success) {
+        showNotification('❌ ' + result.error, 'error');
+        return;
+    }
+    
+    const design = result.data;
+    
+    // Load image
+    currentImageData = design.image_data;
+    const img = new Image();
+    img.onload = function() {
+        sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+        sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
+        switchTab('source');
+    };
+    img.src = design.image_data;
+    
+    // Load parameters
+    document.getElementById('numNails').value = design.parameters.num_nails;
+    document.getElementById('numNailsValue').textContent = design.parameters.num_nails;
+    document.getElementById('numStrings').value = design.parameters.num_strings;
+    document.getElementById('numStringsValue').textContent = design.parameters.num_strings;
+    document.getElementById('circleRadius').value = design.parameters.circle_radius_cm;
+    document.getElementById('circleRadiusValue').textContent = design.parameters.circle_radius_cm;
+    document.getElementById('threadThickness').value = design.parameters.thread_thickness_mm;
+    document.getElementById('threadThicknessValue').textContent = design.parameters.thread_thickness_mm;
+    document.getElementById('imageResolution').value = design.parameters.image_resolution;
+    document.getElementById('imageResolutionValue').textContent = design.parameters.image_resolution;
+    
+    // Load sequence
+    pinSequence = design.sequence;
+    numNails = design.parameters.num_nails;
+    circleRadius = design.parameters.circle_radius_cm;
+    
+    // Render the design
+    animateDrawing(pinSequence, numNails);
+    
+    // Update info
+    document.getElementById('stringLength').textContent = `${design.pattern_info.total_length_m.toFixed(2)} m (approx ${(design.pattern_info.total_length_m * 3.28084).toFixed(1)} ft)`;
+    document.getElementById('linesGenerated').textContent = design.pattern_info.num_lines;
+    infoBox.style.display = 'block';
+    
+    // Enable buttons
+    replayBtn.disabled = false;
+    voicePlay.disabled = false;
+    voiceStop.disabled = false;
+    downloadTemplateBtn.disabled = false;
+    
+    closeMyDesignsModal();
+    showNotification('✅ Design loaded: ' + design.name, 'success');
+}
+
+/**
+ * Confirm delete design
+ */
+function confirmDeleteDesign(designId, designName) {
+    if (confirm(`Are you sure you want to delete "${designName}"? This cannot be undone.`)) {
+        deleteDesignById(designId);
+    }
+}
+
+/**
+ * Delete a design by ID
+ */
+async function deleteDesignById(designId) {
+    const result = await window.SupabaseAuth.deleteDesign(designId);
+    
+    if (result.success) {
+        showNotification('🗑️ Design deleted', 'success');
+        
+        // Refresh the grid
+        const designs = await window.SupabaseAuth.loadUserDesigns();
+        renderDesignsGrid(designs);
+        
+        // Update limit info
+        const profile = window.SupabaseAuth.getUserProfile();
+        if (profile && !window.SupabaseAuth.isProUser()) {
+            document.getElementById('designCount').textContent = profile.design_count;
+        }
+    } else {
+        showNotification('❌ ' + result.error, 'error');
+    }
+}
+
+// ============================================================================
+// UPGRADE MODAL HANDLERS
+// ============================================================================
+
+/**
+ * Show upgrade modal
+ */
+function showUpgradeModal() {
+    document.getElementById('upgradeModal').style.display = 'flex';
+}
+
+/**
+ * Close upgrade modal
+ */
+function closeUpgradeModal() {
+    document.getElementById('upgradeModal').style.display = 'none';
+}
+
+/**
+ * Handle upgrade (placeholder for Stripe integration)
+ */
+function handleUpgrade() {
+    // TODO: Integrate Stripe checkout
+    alert('Stripe integration coming soon! For now, contact support to upgrade.');
+}
+
+// ============================================================================
+// UI UPDATE HANDLERS
+// ============================================================================
+
+/**
+ * Update UI when user logs in
+ */
+window.addEventListener('userLoggedIn', function(event) {
+    const { user, profile } = event.detail;
+    
+    // Show logged in menu, hide logged out menu
+    document.getElementById('userMenuLoggedOut').style.display = 'none';
+    document.getElementById('userMenuLoggedIn').style.display = 'flex';
+    
+    // Show save/load buttons
+    document.getElementById('saveDesignBtn').style.display = 'inline-block';
+    document.getElementById('loadDesignBtn').style.display = 'inline-block';
+    
+    // Update user info in dropdown
+    if (user.email) {
+        document.getElementById('userEmail').textContent = user.email;
+        
+        // Set initials
+        const name = profile?.full_name || user.email;
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        document.getElementById('userInitials').textContent = initials;
+    }
+    
+    if (profile) {
+        document.getElementById('userName').textContent = profile.full_name || 'User';
+        
+        const isPro = window.SupabaseAuth.isProUser();
+        document.getElementById('userPlan').textContent = isPro ? 'Pro Plan ⭐' : 'Free Plan';
+    }
+});
+
+/**
+ * Update UI when user logs out
+ */
+window.addEventListener('userLoggedOut', function() {
+    // Show logged out menu, hide logged in menu
+    document.getElementById('userMenuLoggedOut').style.display = 'flex';
+    document.getElementById('userMenuLoggedIn').style.display = 'none';
+    
+    // Hide save/load buttons
+    document.getElementById('saveDesignBtn').style.display = 'none';
+    document.getElementById('loadDesignBtn').style.display = 'none';
+    
+    // Close any open menus
+    closeUserDropdown();
+});
+
+// ============================================================================
+// NOTIFICATION SYSTEM
+// ============================================================================
+
+/**
+ * Show notification
+ */
+function showNotification(message, type = 'info') {
+    // Check if notification container exists, create if not
+    let container = document.getElementById('notificationContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notificationContainer';
+        container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        `;
+        document.body.appendChild(container);
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        padding: 16px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 250px;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    // Set color based on type
+    if (type === 'success') {
+        notification.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    } else if (type === 'error') {
+        notification.style.background = 'linear-gradient(135deg, #f5576c 0%, #f093fb 100%)';
+    } else {
+        notification.style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+    }
+    
+    notification.textContent = message;
+    container.appendChild(notification);
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            container.removeChild(notification);
+        }, 300);
+    }, 4000);
+}
+
+// Add notification animations to head
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// ============================================================================
+// TRACK GENERATION METADATA (for saving)
+// ============================================================================
+
+let currentImageData = null;
+let lastGenerationProvider = null;
+let lastGenerationTime = null;
+
+// Hook into existing socket events to track metadata
+const originalFinalSequenceHandler = socket._callbacks.$final_sequence;
+socket.on('final_sequence', function(data) {
+    if (data.provider) {
+        lastGenerationProvider = data.provider;
+    }
+    if (data.total_time) {
+        lastGenerationTime = data.total_time * 1000; // Convert to ms
+    }
+});
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+};    
+
     </script>
+
+<!-- ============================================================================ -->
+<!-- AUTH MODAL -->
+<!-- ============================================================================ -->
+<div id="authModal" class="modal" style="display: none;">
+    <div class="modal-content auth-modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('signin')">Sign In</button>
+            <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+        
+        <!-- Sign In Form -->
+        <div id="signinForm" class="auth-form active">
+            <h2>Welcome Back!</h2>
+            <p class="auth-subtitle">Sign in to save and manage your designs</p>
+            
+            <form onsubmit="handleSignIn(event)">
+                <div class="form-group">
+                    <label for="signinEmail">Email</label>
+                    <input type="email" id="signinEmail" required placeholder="you@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signinPassword">Password</label>
+                    <input type="password" id="signinPassword" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Sign In</button>
+                
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+                
+                <button type="button" class="auth-btn google" onclick="handleOAuthSignIn('google')">
+                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+                    Continue with Google
+                </button>
+                
+                <button type="button" class="auth-btn github" onclick="handleOAuthSignIn('github')">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    Continue with GitHub
+                </button>
+                
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchAuthTab('magic')">Sign in with magic link</button>
+                    <button type="button" class="link-btn" onclick="switchAuthTab('reset')">Forgot password?</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Sign Up Form -->
+        <div id="signupForm" class="auth-form">
+            <h2>Create Account</h2>
+            <p class="auth-subtitle">Start saving your amazing designs!</p>
+            
+            <form onsubmit="handleSignUp(event)">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" required placeholder="John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" required placeholder="you@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" required minlength="6" placeholder="At least 6 characters">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPasswordConfirm">Confirm Password</label>
+                    <input type="password" id="signupPasswordConfirm" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Create Account</button>
+                
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+                
+                <button type="button" class="auth-btn google" onclick="handleOAuthSignIn('google')">
+                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+                    Sign up with Google
+                </button>
+                
+                <button type="button" class="auth-btn github" onclick="handleOAuthSignIn('github')">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    Sign up with GitHub
+                </button>
+                
+                <p class="auth-terms">By signing up, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+            </form>
+        </div>
+        
+        <!-- Magic Link Form -->
+        <div id="magicForm" class="auth-form">
+            <h2>Magic Link</h2>
+            <p class="auth-subtitle">We'll email you a link to sign in</p>
+            
+            <form onsubmit="handleMagicLink(event)">
+                <div class="form-group">
+                    <label for="magicEmail">Email</label>
+                    <input type="email" id="magicEmail" required placeholder="you@example.com">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Send Magic Link</button>
+                
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchAuthTab('signin')">← Back to sign in</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Password Reset Form -->
+        <div id="resetForm" class="auth-form">
+            <h2>Reset Password</h2>
+            <p class="auth-subtitle">We'll send you a password reset link</p>
+            
+            <form onsubmit="handlePasswordReset(event)">
+                <div class="form-group">
+                    <label for="resetEmail">Email</label>
+                    <input type="email" id="resetEmail" required placeholder="you@example.com">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Send Reset Link</button>
+                
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchAuthTab('signin')">← Back to sign in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================ -->
+<!-- SAVE DESIGN MODAL -->
+<!-- ============================================================================ -->
+<div id="saveDesignModal" class="modal" style="display: none;">
+    <div class="modal-content save-modal-content">
+        <span class="close-modal" onclick="closeSaveDesignModal()">&times;</span>
+        
+        <h2>💾 Save Design</h2>
+        <p class="modal-subtitle">Give your design a name</p>
+        
+        <form onsubmit="handleSaveDesign(event)">
+            <div class="form-group">
+                <label for="designName">Design Name</label>
+                <input type="text" id="designName" required placeholder="e.g., Mom's Portrait" maxlength="100">
+            </div>
+            
+            <div id="saveDesignStatus" class="form-status"></div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeSaveDesignModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Save Design</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================================ -->
+<!-- MY DESIGNS MODAL -->
+<!-- ============================================================================ -->
+<div id="myDesignsModal" class="modal" style="display: none;">
+    <div class="modal-content designs-modal-content">
+        <span class="close-modal" onclick="closeMyDesignsModal()">&times;</span>
+        
+        <h2>📁 My Designs</h2>
+        
+        <div id="designsLimitInfo" class="designs-limit-info" style="display: none;">
+            <p>🎁 Free plan: <span id="designCount">0</span>/3 designs saved</p>
+            <button class="btn-upgrade" onclick="showUpgradeModal()">⭐ Upgrade to Pro for Unlimited</button>
+        </div>
+        
+        <div id="designsGrid" class="designs-grid">
+            <!-- Designs will be populated here -->
+        </div>
+        
+        <div id="noDesigns" class="no-designs" style="display: none;">
+            <p>📭 No saved designs yet</p>
+            <p>Generate and save your first string art design!</p>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================ -->
+<!-- UPGRADE MODAL -->
+<!-- ============================================================================ -->
+<div id="upgradeModal" class="modal" style="display: none;">
+    <div class="modal-content upgrade-modal-content">
+        <span class="close-modal" onclick="closeUpgradeModal()">&times;</span>
+        
+        <h2>⭐ Upgrade to Pro</h2>
+        
+        <div class="pricing-comparison">
+            <div class="pricing-plan free">
+                <h3>Free</h3>
+                <p class="price">$0</p>
+                <ul>
+                    <li>✅ Unlimited generations</li>
+                    <li>✅ Save up to 3 designs</li>
+                    <li>✅ Basic resolution</li>
+                    <li>⚠️ Small watermark</li>
+                </ul>
+            </div>
+            
+            <div class="pricing-plan pro">
+                <div class="popular-badge">Most Popular</div>
+                <h3>Pro</h3>
+                <p class="price">$9.99<span>/month</span></p>
+                <ul>
+                    <li>✅ Everything in Free</li>
+                    <li>⭐ Unlimited saved designs</li>
+                    <li>⭐ High-resolution exports</li>
+                    <li>⭐ No watermarks</li>
+                    <li>⭐ Priority GPU access</li>
+                    <li>⭐ Commercial usage rights</li>
+                </ul>
+                <button class="btn-primary btn-large" onclick="handleUpgrade()">Upgrade Now</button>
+            </div>
+        </div>
+        
+        <p class="upgrade-footer">Cancel anytime. 30-day money-back guarantee.</p>
+    </div>
+</div>
+
 </body>
 </html>
