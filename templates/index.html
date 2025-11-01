@@ -2357,5 +2357,235 @@
             progressContainer.style.display = 'none';
         });
     </script>
+
+<!-- ============================================================================ -->
+<!-- AUTH MODAL -->
+<!-- ============================================================================ -->
+<div id="authModal" class="modal" style="display: none;">
+    <div class="modal-content auth-modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('signin')">Sign In</button>
+            <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+        
+        <!-- Sign In Form -->
+        <div id="signinForm" class="auth-form active">
+            <h2>Welcome Back!</h2>
+            <p class="auth-subtitle">Sign in to save and manage your designs</p>
+            
+            <form onsubmit="handleSignIn(event)">
+                <div class="form-group">
+                    <label for="signinEmail">Email</label>
+                    <input type="email" id="signinEmail" required placeholder="you@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signinPassword">Password</label>
+                    <input type="password" id="signinPassword" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Sign In</button>
+                
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+                
+                <button type="button" class="auth-btn google" onclick="handleOAuthSignIn('google')">
+                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+                    Continue with Google
+                </button>
+                
+                <button type="button" class="auth-btn github" onclick="handleOAuthSignIn('github')">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    Continue with GitHub
+                </button>
+                
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchAuthTab('magic')">Sign in with magic link</button>
+                    <button type="button" class="link-btn" onclick="switchAuthTab('reset')">Forgot password?</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Sign Up Form -->
+        <div id="signupForm" class="auth-form">
+            <h2>Create Account</h2>
+            <p class="auth-subtitle">Start saving your amazing designs!</p>
+            
+            <form onsubmit="handleSignUp(event)">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" required placeholder="John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" required placeholder="you@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" required minlength="6" placeholder="At least 6 characters">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPasswordConfirm">Confirm Password</label>
+                    <input type="password" id="signupPasswordConfirm" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Create Account</button>
+                
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+                
+                <button type="button" class="auth-btn google" onclick="handleOAuthSignIn('google')">
+                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+                    Sign up with Google
+                </button>
+                
+                <button type="button" class="auth-btn github" onclick="handleOAuthSignIn('github')">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    Sign up with GitHub
+                </button>
+                
+                <p class="auth-terms">By signing up, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+            </form>
+        </div>
+        
+        <!-- Magic Link Form -->
+        <div id="magicForm" class="auth-form">
+            <h2>Magic Link</h2>
+            <p class="auth-subtitle">We'll email you a link to sign in</p>
+            
+            <form onsubmit="handleMagicLink(event)">
+                <div class="form-group">
+                    <label for="magicEmail">Email</label>
+                    <input type="email" id="magicEmail" required placeholder="you@example.com">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Send Magic Link</button>
+                
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchAuthTab('signin')">← Back to sign in</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Password Reset Form -->
+        <div id="resetForm" class="auth-form">
+            <h2>Reset Password</h2>
+            <p class="auth-subtitle">We'll send you a password reset link</p>
+            
+            <form onsubmit="handlePasswordReset(event)">
+                <div class="form-group">
+                    <label for="resetEmail">Email</label>
+                    <input type="email" id="resetEmail" required placeholder="you@example.com">
+                </div>
+                
+                <button type="submit" class="auth-btn primary">Send Reset Link</button>
+                
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchAuthTab('signin')">← Back to sign in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================ -->
+<!-- SAVE DESIGN MODAL -->
+<!-- ============================================================================ -->
+<div id="saveDesignModal" class="modal" style="display: none;">
+    <div class="modal-content save-modal-content">
+        <span class="close-modal" onclick="closeSaveDesignModal()">&times;</span>
+        
+        <h2>💾 Save Design</h2>
+        <p class="modal-subtitle">Give your design a name</p>
+        
+        <form onsubmit="handleSaveDesign(event)">
+            <div class="form-group">
+                <label for="designName">Design Name</label>
+                <input type="text" id="designName" required placeholder="e.g., Mom's Portrait" maxlength="100">
+            </div>
+            
+            <div id="saveDesignStatus" class="form-status"></div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeSaveDesignModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Save Design</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================================ -->
+<!-- MY DESIGNS MODAL -->
+<!-- ============================================================================ -->
+<div id="myDesignsModal" class="modal" style="display: none;">
+    <div class="modal-content designs-modal-content">
+        <span class="close-modal" onclick="closeMyDesignsModal()">&times;</span>
+        
+        <h2>📁 My Designs</h2>
+        
+        <div id="designsLimitInfo" class="designs-limit-info" style="display: none;">
+            <p>🎁 Free plan: <span id="designCount">0</span>/3 designs saved</p>
+            <button class="btn-upgrade" onclick="showUpgradeModal()">⭐ Upgrade to Pro for Unlimited</button>
+        </div>
+        
+        <div id="designsGrid" class="designs-grid">
+            <!-- Designs will be populated here -->
+        </div>
+        
+        <div id="noDesigns" class="no-designs" style="display: none;">
+            <p>📭 No saved designs yet</p>
+            <p>Generate and save your first string art design!</p>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================ -->
+<!-- UPGRADE MODAL -->
+<!-- ============================================================================ -->
+<div id="upgradeModal" class="modal" style="display: none;">
+    <div class="modal-content upgrade-modal-content">
+        <span class="close-modal" onclick="closeUpgradeModal()">&times;</span>
+        
+        <h2>⭐ Upgrade to Pro</h2>
+        
+        <div class="pricing-comparison">
+            <div class="pricing-plan free">
+                <h3>Free</h3>
+                <p class="price">$0</p>
+                <ul>
+                    <li>✅ Unlimited generations</li>
+                    <li>✅ Save up to 3 designs</li>
+                    <li>✅ Basic resolution</li>
+                    <li>⚠️ Small watermark</li>
+                </ul>
+            </div>
+            
+            <div class="pricing-plan pro">
+                <div class="popular-badge">Most Popular</div>
+                <h3>Pro</h3>
+                <p class="price">$9.99<span>/month</span></p>
+                <ul>
+                    <li>✅ Everything in Free</li>
+                    <li>⭐ Unlimited saved designs</li>
+                    <li>⭐ High-resolution exports</li>
+                    <li>⭐ No watermarks</li>
+                    <li>⭐ Priority GPU access</li>
+                    <li>⭐ Commercial usage rights</li>
+                </ul>
+                <button class="btn-primary btn-large" onclick="handleUpgrade()">Upgrade Now</button>
+            </div>
+        </div>
+        
+        <p class="upgrade-footer">Cancel anytime. 30-day money-back guarantee.</p>
+    </div>
+</div>
+
 </body>
 </html>
