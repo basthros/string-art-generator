@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>String Art Generator - CUDA Accelerated</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Client (our custom file) -->
+    <script src="/static/js/supabase-client.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <style>
@@ -34,6 +39,13 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-title {
+            flex: 1;
             text-align: center;
         }
         
@@ -685,8 +697,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎨 String Art Generator</h1>
-            <p>CUDA-Accelerated Nail Pattern Creation with Multilingual Voice Guidance</p>
+            <div class="header-title">
+                <h1>🎨 String Art Generator</h1>
+                <p>CUDA-Accelerated Nail Pattern Creation with Multilingual Voice Guidance</p>
+            </div>
+            
+            <!-- Auth will be added by supabase-client.js -->
+            <div id="authContainer"></div>
         </div>
         
         <div class="main-content">
