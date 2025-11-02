@@ -39,13 +39,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header-title {
-            flex: 1;
             text-align: center;
         }
         
@@ -692,6 +685,380 @@
                 width: 100%;
             }
         }
+
+        /* ====================================================================== */
+        /* AUTH UI STYLES */
+        /* ====================================================================== */
+
+        /* Header with User Menu */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            flex: 1;
+        }
+
+        .user-menu {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-header {
+            padding: 8px 16px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-header:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-primary-header:hover {
+            background: linear-gradient(135deg, #df82ea 0%, #e4465b 100%);
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 250px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-header {
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dropdown-header strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .user-email {
+            display: block;
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .user-plan {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 8px 0;
+        }
+
+        .dropdown-item {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            transition: background 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        /* Auth Modal Styles */
+        .auth-modal-content {
+            max-width: 450px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .auth-tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .auth-tab:hover {
+            color: #667eea;
+        }
+
+        .auth-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .auth-form h2 {
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .auth-subtitle {
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .auth-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .auth-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .auth-divider {
+            text-align: center;
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .auth-divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .auth-divider span {
+            background: white;
+            padding: 0 10px;
+            position: relative;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .auth-btn.google,
+        .auth-btn.github,
+        .auth-btn.microsoft {
+            background: white;
+            border: 2px solid #e0e0e0;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .auth-btn.google:hover,
+        .auth-btn.github:hover,
+        .auth-btn.microsoft:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .auth-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #667eea;
+            cursor: pointer;
+        }
+
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Design Gallery Styles */
+        .designs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .design-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .design-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .design-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .design-card h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .design-card p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .design-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .design-card-btn {
+            flex: 1;
+            padding: 6px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .design-card-btn.load {
+            background: #667eea;
+            color: white;
+        }
+
+        .design-card-btn.delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .close-modal:hover {
+            color: #000;
+        }
+
     </style>
 </head>
 <body>
@@ -701,9 +1068,30 @@
                 <h1>🎨 String Art Generator</h1>
                 <p>CUDA-Accelerated Nail Pattern Creation with Multilingual Voice Guidance</p>
             </div>
-            
-            <!-- Auth will be added by supabase-client.js -->
-            <div id="authContainer"></div>
+
+            <!-- User Menu (logged out state) -->
+            <div id="userMenuLoggedOut" class="user-menu">
+                <button class="btn-header" onclick="openAuthModal('signin')">Sign In</button>
+                <button class="btn-header btn-primary-header" onclick="openAuthModal('signup')">Sign Up</button>
+            </div>
+
+            <!-- User Menu (logged in state) -->
+            <div id="userMenuLoggedIn" class="user-menu" style="display: none;">
+                <button class="btn-header" onclick="openMyDesignsModal()">📁 My Designs</button>
+                <div class="user-dropdown">
+                    <div class="user-avatar" onclick="toggleUserDropdown()" id="userAvatar">U</div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-header">
+                            <strong id="userName">User Name</strong>
+                            <span class="user-email" id="userEmail">user@example.com</span>
+                            <span class="user-plan" id="userPlan">Free Plan</span>
+                        </div>
+                        <button class="dropdown-item" onclick="openUpgradeModal()">⭐ Upgrade to Pro</button>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" onclick="handleSignOut()">🚪 Sign Out</button>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="main-content">
@@ -2367,6 +2755,470 @@
             cancelBtn.disabled = true;
             progressContainer.style.display = 'none';
         });
-    </script>
+    
+        // ====================================================================
+        // AUTH INTEGRATION
+        // ====================================================================
+
+        // Initialize auth when page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (typeof window.SupabaseAuth !== 'undefined') {
+                await window.SupabaseAuth.initAuth();
+            }
+        });
+
+        // Auth Modal Functions
+        function openAuthModal(tab = 'signin') {
+            document.getElementById('authModal').style.display = 'flex';
+            switchAuthTab(tab);
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+
+            if (tab === 'signin') {
+                document.getElementById('signinTab').classList.add('active');
+                document.getElementById('signinForm').classList.add('active');
+            } else if (tab === 'signup') {
+                document.getElementById('signupTab').classList.add('active');
+                document.getElementById('signupForm').classList.add('active');
+            } else if (tab === 'reset') {
+                document.getElementById('resetForm').classList.add('active');
+            }
+        }
+
+        // Auth Handlers
+        async function handleSignUp(event) {
+            event.preventDefault();
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const fullName = document.getElementById('signupName').value;
+
+            const result = await window.SupabaseAuth.signUp(email, password, fullName);
+            if (result.success) {
+                alert('✅ Account created! Please check your email to verify your account.');
+                closeAuthModal();
+            } else {
+                alert('❌ Sign up failed: ' + result.error);
+            }
+        }
+
+        async function handleSignIn(event) {
+            event.preventDefault();
+            const email = document.getElementById('signinEmail').value;
+            const password = document.getElementById('signinPassword').value;
+
+            const result = await window.SupabaseAuth.signIn(email, password);
+            if (result.success) {
+                closeAuthModal();
+            } else {
+                alert('❌ Sign in failed: ' + result.error);
+            }
+        }
+
+        async function handleOAuthSignIn(provider) {
+            await window.SupabaseAuth.signInWithOAuth(provider);
+        }
+
+        async function handlePasswordReset(event) {
+            event.preventDefault();
+            const email = document.getElementById('resetEmail').value;
+
+            const result = await window.SupabaseAuth.resetPassword(email);
+            if (result.success) {
+                alert('✅ Password reset link sent! Check your email.');
+                switchAuthTab('signin');
+            } else {
+                alert('❌ Failed to send reset link: ' + result.error);
+            }
+        }
+
+        async function handleSignOut() {
+            await window.SupabaseAuth.signOut();
+            toggleUserDropdown();
+        }
+
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('dropdownMenu');
+            dropdown.classList.toggle('show');
+        }
+
+        window.addEventListener('click', (event) => {
+            if (!event.target.matches('.user-avatar')) {
+                const dropdown = document.getElementById('dropdownMenu');
+                if (dropdown && dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        });
+
+        window.updateUIForLoggedInUser = function() {
+            document.getElementById('userMenuLoggedOut').style.display = 'none';
+            document.getElementById('userMenuLoggedIn').style.display = 'flex';
+            document.getElementById('saveDesignBtn').style.display = 'inline-block';
+            document.getElementById('loadDesignBtn').style.display = 'inline-block';
+
+            const user = window.SupabaseAuth.currentUser;
+            if (user) {
+                const initials = (user.email?.charAt(0) || 'U').toUpperCase();
+                document.getElementById('userAvatar').textContent = initials;
+                document.getElementById('userName').textContent = user.user_metadata?.full_name || 'User';
+                document.getElementById('userEmail').textContent = user.email;
+                const isPro = window.SupabaseAuth.isProUser();
+                document.getElementById('userPlan').textContent = isPro ? '⭐ Pro' : 'Free Plan';
+            }
+        };
+
+        window.updateUIForLoggedOutUser = function() {
+            document.getElementById('userMenuLoggedOut').style.display = 'flex';
+            document.getElementById('userMenuLoggedIn').style.display = 'none';
+            document.getElementById('saveDesignBtn').style.display = 'none';
+            document.getElementById('loadDesignBtn').style.display = 'none';
+        };
+
+        function openSaveDesignModal() {
+            if (!window.SupabaseAuth || !window.SupabaseAuth.currentUser) {
+                openAuthModal('signin');
+                return;
+            }
+
+            if (!window.SupabaseAuth.canSaveDesign()) {
+                alert('⚠️ You have reached the limit of 3 saved designs on the free plan. Upgrade to Pro for unlimited designs!');
+                openUpgradeModal();
+                return;
+            }
+
+            document.getElementById('saveDesignModal').style.display = 'flex';
+        }
+
+        function closeSaveDesignModal() {
+            document.getElementById('saveDesignModal').style.display = 'none';
+        }
+
+        async function saveCurrentDesign(event) {
+            event.preventDefault();
+
+            if (pinSequence.length === 0) {
+                alert('⚠️ No design to save. Please generate a pattern first.');
+                return;
+            }
+
+            const designName = document.getElementById('designName').value;
+            const designDescription = document.getElementById('designDescription').value;
+            const canvasImage = canvas.toDataURL('image/png');
+
+            const designData = {
+                name: designName,
+                description: designDescription,
+                sequence: pinSequence,
+                parameters: {
+                    num_nails: numNails,
+                    circle_radius_cm: circleRadius,
+                    num_strings: parseInt(document.getElementById('numStrings').value),
+                    thread_thickness_mm: parseFloat(document.getElementById('threadThickness').value),
+                    image_resolution: parseInt(document.getElementById('imageResolution').value)
+                },
+                canvas_image: canvasImage,
+                source_image: sourceImageData
+            };
+
+            const result = await window.SupabaseAuth.saveDesign(designData);
+            if (result.success) {
+                alert('✅ Design saved successfully!');
+                closeSaveDesignModal();
+                document.getElementById('designName').value = '';
+                document.getElementById('designDescription').value = '';
+            } else {
+                alert('❌ Failed to save design: ' + result.error);
+            }
+        }
+
+        async function openMyDesignsModal() {
+            if (!window.SupabaseAuth || !window.SupabaseAuth.currentUser) {
+                openAuthModal('signin');
+                return;
+            }
+
+            document.getElementById('myDesignsModal').style.display = 'flex';
+            const designs = await window.SupabaseAuth.loadUserDesigns();
+            renderDesignsGallery(designs);
+
+            const profile = window.SupabaseAuth.userProfile;
+            if (profile && !window.SupabaseAuth.isProUser()) {
+                document.getElementById('designCount').textContent = `You have ${designs.length}/3 saved designs (Free Plan)`;
+            } else {
+                document.getElementById('designCount').textContent = `You have ${designs.length} saved designs`;
+            }
+        }
+
+        function closeMyDesignsModal() {
+            document.getElementById('myDesignsModal').style.display = 'none';
+        }
+
+        function renderDesignsGallery(designs) {
+            const grid = document.getElementById('designsGrid');
+
+            if (designs.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: #999;">No saved designs yet. Create your first one!</p>';
+                return;
+            }
+
+            grid.innerHTML = designs.map(design => `
+                <div class="design-card">
+                    <img src="${design.canvas_image || '/static/placeholder.png'}" alt="${design.name}">
+                    <h4>${design.name}</h4>
+                    <p>${new Date(design.created_at).toLocaleDateString()}</p>
+                    <div class="design-card-actions">
+                        <button class="design-card-btn load" onclick="loadSavedDesign('${design.id}')">Load</button>
+                        <button class="design-card-btn delete" onclick="deleteSavedDesign('${design.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadSavedDesign(designId) {
+            const design = await window.SupabaseAuth.loadDesign(designId);
+            if (design) {
+                pinSequence = design.sequence;
+                numNails = design.parameters.num_nails;
+                circleRadius = design.parameters.circle_radius_cm;
+
+                document.getElementById('numNails').value = numNails;
+                document.getElementById('numNailsValue').textContent = numNails;
+                document.getElementById('circleRadius').value = circleRadius;
+                document.getElementById('circleRadiusValue').textContent = circleRadius;
+                document.getElementById('numStrings').value = design.parameters.num_strings;
+                document.getElementById('numStringsValue').textContent = design.parameters.num_strings;
+                document.getElementById('threadThickness').value = design.parameters.thread_thickness_mm;
+                document.getElementById('threadThicknessValue').textContent = design.parameters.thread_thickness_mm;
+
+                if (design.canvas_image) {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        hasValidCanvasData = true;
+                    };
+                    img.src = design.canvas_image;
+                }
+
+                if (design.source_image) {
+                    sourceImageData = design.source_image;
+                    const img = new Image();
+                    img.onload = () => {
+                        sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+                        sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
+                    };
+                    img.src = design.source_image;
+                    generateBtn.disabled = false;
+                    cropAgainBtn.disabled = false;
+                }
+
+                renderSequence();
+                updateSequenceNavigation();
+
+                voicePlay.disabled = false;
+                voiceStop.disabled = false;
+                prevBtn.disabled = false;
+                nextBtn.disabled = pinSequence.length <= 1;
+                replayBtn.disabled = false;
+                downloadTemplateBtn.disabled = false;
+
+                alert('✅ Design loaded successfully!');
+                closeMyDesignsModal();
+            }
+        }
+
+        async function deleteSavedDesign(designId) {
+            if (!confirm('Are you sure you want to delete this design?')) {
+                return;
+            }
+
+            const result = await window.SupabaseAuth.deleteDesign(designId);
+            if (result.success) {
+                alert('✅ Design deleted');
+                openMyDesignsModal();
+            } else {
+                alert('❌ Failed to delete: ' + result.error);
+            }
+        }
+
+        function openUpgradeModal() {
+            document.getElementById('upgradeModal').style.display = 'flex';
+        }
+
+        function closeUpgradeModal() {
+            document.getElementById('upgradeModal').style.display = 'none';
+        }
+
+        function handleUpgrade() {
+            alert('Stripe integration coming soon! This will redirect to payment page.');
+        }
+
+
+</script>
+
+    <!-- ============================================================================ -->
+    <!-- AUTH MODALS -->
+    <!-- ============================================================================ -->
+
+    <!-- Auth Modal (Sign In / Sign Up) -->
+    <div id="authModal" class="modal" style="display: none;">
+        <div class="modal-content auth-modal-content">
+            <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="signinTab" onclick="switchAuthTab('signin')">Sign In</button>
+                <button class="auth-tab" id="signupTab" onclick="switchAuthTab('signup')">Sign Up</button>
+            </div>
+
+            <!-- Sign In Form -->
+            <div id="signinForm" class="auth-form active">
+                <h2>Welcome Back!</h2>
+                <p class="auth-subtitle">Sign in to save and manage your designs</p>
+
+                <form onsubmit="handleSignIn(event)">
+                    <div class="form-group">
+                        <label for="signinEmail">Email</label>
+                        <input type="email" id="signinEmail" required placeholder="you@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signinPassword">Password</label>
+                        <input type="password" id="signinPassword" required placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="auth-btn primary">Sign In</button>
+                </form>
+
+                <div class="auth-divider"><span>OR</span></div>
+
+                <button type="button" class="auth-btn google" onclick="handleOAuthSignIn('google')">
+                    Continue with Google
+                </button>
+
+                <p class="auth-link" onclick="switchAuthTab('reset')">Forgot password?</p>
+            </div>
+
+            <!-- Sign Up Form -->
+            <div id="signupForm" class="auth-form">
+                <h2>Create Account</h2>
+                <p class="auth-subtitle">Join to save unlimited designs</p>
+
+                <form onsubmit="handleSignUp(event)">
+                    <div class="form-group">
+                        <label for="signupName">Full Name</label>
+                        <input type="text" id="signupName" required placeholder="John Doe">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" id="signupEmail" required placeholder="you@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <input type="password" id="signupPassword" required placeholder="••••••••" minlength="6">
+                    </div>
+
+                    <button type="submit" class="auth-btn primary">Sign Up</button>
+                </form>
+
+                <div class="auth-divider"><span>OR</span></div>
+
+                <button type="button" class="auth-btn google" onclick="handleOAuthSignIn('google')">
+                    Continue with Google
+                </button>
+            </div>
+
+            <!-- Password Reset Form -->
+            <div id="resetForm" class="auth-form">
+                <h2>Reset Password</h2>
+                <p class="auth-subtitle">Enter your email to receive a reset link</p>
+
+                <form onsubmit="handlePasswordReset(event)">
+                    <div class="form-group">
+                        <label for="resetEmail">Email</label>
+                        <input type="email" id="resetEmail" required placeholder="you@example.com">
+                    </div>
+
+                    <button type="submit" class="auth-btn primary">Send Reset Link</button>
+                </form>
+
+                <p class="auth-link" onclick="switchAuthTab('signin')">Back to Sign In</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Design Modal -->
+    <div id="saveDesignModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeSaveDesignModal()">&times;</span>
+
+            <h2>💾 Save Design</h2>
+            <p style="color: #666; margin-bottom: 20px;">Save your current pattern and sequence</p>
+
+            <form onsubmit="saveCurrentDesign(event)">
+                <div class="form-group">
+                    <label for="designName">Design Name</label>
+                    <input type="text" id="designName" required placeholder="My String Art Design">
+                </div>
+
+                <div class="form-group">
+                    <label for="designDescription">Description (optional)</label>
+                    <textarea id="designDescription" rows="3" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: inherit;" placeholder="Add notes about this design..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Design</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- My Designs Modal -->
+    <div id="myDesignsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-modal" onclick="closeMyDesignsModal()">&times;</span>
+
+            <h2>📁 My Designs</h2>
+            <p id="designCount" style="color: #666; margin-bottom: 20px;">Loading...</p>
+
+            <div class="designs-grid" id="designsGrid">
+                <!-- Designs will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeUpgradeModal()">&times;</span>
+
+            <h2>⭐ Upgrade to Pro</h2>
+            <p style="color: #666; margin-bottom: 20px;">Unlock unlimited designs and premium features</p>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 10px;">Pro Features:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 8px 0;">✅ Unlimited saved designs</li>
+                    <li style="padding: 8px 0;">✅ High-resolution exports</li>
+                    <li style="padding: 8px 0;">✅ No watermarks</li>
+                    <li style="padding: 8px 0;">✅ Priority support</li>
+                </ul>
+                <div style="font-size: 24px; font-weight: bold; color: #667eea; margin-top: 16px;">
+                    $9.99 / month
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="handleUpgrade()">Upgrade Now</button>
+            <p style="text-align: center; margin-top: 12px; font-size: 12px; color: #999;">Secure payment via Stripe</p>
+        </div>
+    </div>
+
+
 </body>
 </html>
